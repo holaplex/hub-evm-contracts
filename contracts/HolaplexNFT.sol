@@ -5,6 +5,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 contract HolaplexNFT is ERC2981Upgradeable, ERC1155Upgradeable, OwnableUpgradeable {
     
     mapping(address => uint256) public ownerToEdition;
+    mappint(uint256 => address) public editionToOwner;
 
     modifier onlyEditionOwner(uint256 editionId) {
         require(editionId == ownerToEdition[msg.sender], "HNFT: not ediditon owner");
@@ -21,11 +22,13 @@ contract HolaplexNFT is ERC2981Upgradeable, ERC1155Upgradeable, OwnableUpgradeab
         return ERC1155Upgradeable.supportsInterface(interfaceId) || ERC2981Upgradeable.supportsInterface(interfaceId);
     }
 
-    function createNewEdition(address editionOwner) external onlyOwner {
+    function createNewEdition(address editionOwner, uint256 id) external onlyOwner {
 
     }
 
     function mint(address to, uint256 id, uint256 amount) external onlyEditionOwner(id) {
         _mint(to, id, amount, "");
     }
+
+
 }
