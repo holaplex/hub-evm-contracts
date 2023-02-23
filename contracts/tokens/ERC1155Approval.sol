@@ -1,77 +1,76 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 
 contract ERC1155Approval is ERC1155SupplyUpgradeable {
     
-    mapping(address => mapping(bytes32 => uint256)) private _allowance;
+    mapping(address => mapping(bytes32 => uint256)) private _allowances;
    
     function __ERC1155Approval_init(string calldata uri) internal onlyInitializing {
         __ERC1155_init(uri);
     }
 
-    function approve(address to, uint256 id, uint256 amount) external returns (bool) {
-        _approve(msg.sender, to, id, amount);
+    function approve(address to_, uint256 id_, uint256 amount_) external returns (bool) {
+        _approve(_msgSender(), to_, id_, amount_);
         return true;
     }
 
-    function allowance(address from, address to, uint256 id) public view returns(uint256) {
-        return _allowance[from][keccak256(abi.encode(to,id))];
+    function allowance(address from_, address to_, uint256 id_) public view returns(uint256) {
+        return _allowances[from_][keccak256(abi.encode(to_, id_))];
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
+        address from_,
+        address to_,
+        uint256 id_,
+        uint256 amount_,
+        bytes memory data_
     ) public override {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()) || allowance(from, to, id) >= amount,
-            "ERC1155Approval: transfer caller is not owner nor approved"
+            from_ == _msgSender() || isApprovedForAll(from_, _msgSender()) || allowance(from_, to_, id_) >= amount_,
+            "ERC1155Approval: caller is not owner not approved"
         );
 
-        _safeTransferFrom(from, to, id, amount, data);
+        _safeTransferFrom(from_, to_, id_, amount_, data_);
     }
 
     function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
+        address from_,
+        address to_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_,
+        bytes memory data_
     ) public override {
         require(
-            from == _msgSender() || isApprovedForAll(from, _msgSender()) || _batchApproveCheck(from,to,ids,amounts),
-            "ERC1155Approval: transfer caller is not owner nor approved"
+            from_ == _msgSender() || isApprovedForAll(from_, _msgSender()) || _batchApproveCheck(from_, to_, ids_, amounts_),
+            "ERC1155Approval: transfer caller is not owner not approved"
         );
 
-        _safeBatchTransferFrom(from, to, ids, amounts, data);
+        _safeBatchTransferFrom(from_, to_, ids_, amounts_, data_);
     }
 
     function _approve(
-        address owner,
-        address spender,
-        uint256 id,
-        uint256 amount
+        address owner_,
+        address spender_,
+        uint256 id_,
+        uint256 amount_
     ) internal virtual {
-        require(owner != address(0), "ERC1155Approval: approve from the zero address");
-        require(spender != address(0), "ERC1155Approval: approve to the zero address");
+        require(owner_ != address(0), "ERC1155Approval: approve from the zero address");
+        require(spender_ != address(0), "ERC1155Approval: approve to the zero address");
 
-        _allowance[owner][keccak256(abi.encode(spender, id))] = amount;
+        _allowances[owner_][keccak256(abi.encode(spender_, id_))] = amount_;
     }
 
     function _batchApproveCheck(
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts
+        address from_,
+        address to_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_
     ) internal view returns(bool checked) {
-        for (uint i = 0; i < ids.length; i++) {
-            if (checked = allowance(from, to, ids[i]) >= amounts[i]){
-                break;
-            }
+        for (uint256 i = 0; i < ids_.length; i++) {
+            checked = allowance(from_, to_, ids_[i]) >= amounts_[i];
+            if (!checked) break;
         }
     }
 }
