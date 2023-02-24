@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "@openzeppelin/contracts-upgradeable/interfaces/IERC2981Upgradeable.sol";
-
-import "../proxy/IUUPSOwnable.sol";
-import "./IERC1155Permit.sol";
-
-interface IERC1155Edition is IERC2981Upgradeable, IERC1155Permit, IUUPSOwnable {
-    struct Edition {
+interface IERC1155Edition {
+    struct ChangeableInfo {
         string description;
         string imageUri;
-        address creator;
-        uint256 createdAt;
         string collection;
+        string uri;
+    }
+
+    struct Edition {
+        address creator;
+        address owner;
+        bool isEditEnabled;
+        uint256 createdAt;
+        ChangeableInfo info;
     }
 
     function __ERC1155Edition_init(string calldata uri_) external;
@@ -20,6 +22,10 @@ interface IERC1155Edition is IERC2981Upgradeable, IERC1155Permit, IUUPSOwnable {
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);
     
     function createNewEdition(uint256 id_, Edition calldata info_) external;
+
+    function disableEdit(uint256 id_) external;
+
+    function editEdition(uint256 id_, ChangeableInfo calldata info_) external;
 
     function transferEditionOwnership(uint256 id_, address to_) external;
 
