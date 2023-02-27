@@ -36,7 +36,7 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
             "ERC1155Approval: caller is not owner not approved"
         );
 
-        if (sender_ != from_){
+        if (sender_ != from_ && !isApprovedForAll(from_, sender_)){
             _spendAllowance(from_, sender_, id_, amount_);
         }
 
@@ -57,7 +57,7 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
             "ERC1155Approval: transfer caller is not owner not approved"
         );
 
-        if (sender_ != from_){
+        if (sender_ != from_ && !isApprovedForAll(from_, sender_)){
             _batchSpendAllowance(from_, sender_, ids_, amounts_);
         }
 
@@ -97,7 +97,6 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     ) internal {
         uint256 currentAllowance_ = allowance(owner_, spender_, id_);
         if (currentAllowance_ != type(uint256).max) {
-            require(currentAllowance_ >= amount_, "ERC1155: insufficient allowance");
             _approve(owner_, spender_, id_, currentAllowance_ - amount_);
         }
     }

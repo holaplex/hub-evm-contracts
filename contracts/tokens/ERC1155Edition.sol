@@ -34,7 +34,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
     function createNewEdition(uint256 id_, Edition memory edition_) external override onlyOwner {
         require(editions[id_].owner == address(0), "ERC1155Edition: edition already exists");
 
-        edition_.owner = address(this);
+        edition_.owner = msg.sender;
         edition_.createdAt = block.timestamp;
 
         editions[id_] = edition_;       

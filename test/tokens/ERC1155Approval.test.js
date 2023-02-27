@@ -10,6 +10,7 @@ ERC1155Approval.numberFormat = "BigInt";
 BaseProxy.numberFormat       = "BigInt";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+const uint256Max = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 
 describe("ERC1155Approval", () => {
     let OWNER;
@@ -67,8 +68,17 @@ describe("ERC1155Approval", () => {
             });
 
             it("should not approve to zero address", async () => {
-                await truffleAssert.reverts(erc1155.approve(ZERO_ADDRESS,1,100), "ERC1155Approval: approve to the zero address");
+                await truffleAssert.reverts(erc1155.mockedApprove(OWNER, ZERO_ADDRESS, 1, 100), "ERC1155Approval: approve to the zero address");
             });
+
+            it("should not approve from zero address", async () => {
+                await truffleAssert.reverts(erc1155.mockedApprove(ZERO_ADDRESS, OWNER, 1, 100), "ERC1155Approval: approve from the zero address");
+            });
+
+            it("should not approve when from == to", async () => {
+                await truffleAssert.reverts(erc1155.mockedApprove(OWNER, OWNER, 1, 100), "ERC1155Approval: spender must not be owner");
+            });
+
         });
 
         describe("safeTransferFrom()", () => {
@@ -89,6 +99,9 @@ describe("ERC1155Approval", () => {
 
                 assert.equal(await erc1155.balanceOf(SECOND,1), 50);
                 assert.equal(await erc1155.balanceOf(SECOND,2), 300);
+
+                assert.equal(await erc1155.allowance(OWNER, SECOND, 1), 50);
+                assert.equal(await erc1155.allowance(OWNER, SECOND, 2), 0);
             });
 
             it("should transfer when approved for all", async () => {
@@ -101,8 +114,21 @@ describe("ERC1155Approval", () => {
                 assert.equal(await erc1155.balanceOf(SECOND,2), 300);
             });
 
+
+            it("should not spend allowance when allowance is uint256.max", async () => {
+                await erc1155.approve(SECOND,1,uint256Max);
+
+                await erc1155.safeTransferFrom(OWNER,SECOND,1,50,"0x",{from:SECOND});
+                
+                assert.equal(await erc1155.balanceOf(SECOND,1), 50);
+                
+                assert.equal(await erc1155.allowance(OWNER, SECOND, 1), uint256Max);
+            });
+
+            
+
             it("should revert when not approved", async () => {
-                await truffleAssert.reverts(erc1155.safeTransferFrom(OWNER,SECOND,1,50,"0x",{from:SECOND}), "ERC1155Approval: transfer caller is not owner nor approved");
+                await truffleAssert.reverts(erc1155.safeTransferFrom(OWNER,SECOND,1,50,"0x",{from:SECOND}), "ERC1155Approval: caller is not owner not approved");
             });
         });
 
@@ -122,6 +148,9 @@ describe("ERC1155Approval", () => {
                 
                 assert.equal(await erc1155.balanceOf(SECOND,1), 50);
                 assert.equal(await erc1155.balanceOf(SECOND,2), 300);
+
+                assert.equal(await erc1155.allowance(OWNER, SECOND, 1), 50);
+                assert.equal(await erc1155.allowance(OWNER, SECOND, 2), 0);
             });
 
             it("should transfer when approved for all", async () => {
@@ -134,7 +163,7 @@ describe("ERC1155Approval", () => {
             });
 
             it("should revert when not approved", async () => {
-                await truffleAssert.reverts(erc1155.safeBatchTransferFrom(OWNER,SECOND,[1,2],[50,300],"0x",{from:SECOND}), "ERC1155Approval: transfer caller is not owner nor approved");
+                await truffleAssert.reverts(erc1155.safeBatchTransferFrom(OWNER,SECOND,[1,2],[50,300],"0x",{from:SECOND}), "ERC1155Approval: transfer caller is not owner not approved");
             });
         });
     });

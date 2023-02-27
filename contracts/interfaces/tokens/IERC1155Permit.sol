@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.9;
 
-import "./IERC1155Approval.sol";
-
-interface IERC1155Permit is IERC1155Approval {
+interface IERC1155Permit {
     function permit(
         address owner_,
         address spender_,
