@@ -8,6 +8,7 @@ import "./ERC1155Approval.sol";
 
 import "../interfaces/tokens/IERC1155Permit.sol";
 
+import "hardhat/console.sol";
 
 abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155Permit {
     using CountersUpgradeable for CountersUpgradeable.Counter;
@@ -24,6 +25,23 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
 
     function __ERC1155PermitUpgradeable_init_unchained() internal onlyInitializing {
         _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 id,uint256 value,uint256 nonce,uint256 deadline)");
+    }
+
+    function getPermitTypeHash() external view returns(bytes32) {
+        return _PERMIT_TYPEHASH;
+    }
+
+    function getHashTypedDataV4(
+        address owner_,
+        address spender_,
+        uint256 id_,
+        uint256 value_,
+        uint256 deadline_
+    ) external view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner_, spender_, id_, value_, _nonces[owner_].current(), deadline_));
+        
+
+        return _hashTypedDataV4(structHash);
     }
 
     function permit(
@@ -43,6 +61,7 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         bytes32 hash = _hashTypedDataV4(structHash);
 
         address signer = ECDSAUpgradeable.recover(hash, v_, r_, s_);
+        
         require(signer == owner_, "ERC1155Permit: invalid signature");
 
         _approve(owner_, spender_, id_, value_);

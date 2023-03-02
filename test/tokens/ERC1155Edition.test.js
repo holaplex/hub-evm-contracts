@@ -193,7 +193,7 @@ describe("ERC1155Edition", () => {
                 await nft.disableEdit(editionId);
                 await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "ERC1155Edition: edit disabled");
             });
-        })
+        });
     });
 
 });
