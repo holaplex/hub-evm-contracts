@@ -58,10 +58,8 @@ async function getApproval(token, approve, nonce, deadline, chainId) {
         )
     );
   }
-  
-//   value:
 
-describe.only("ERC1155Permit", () => {
+describe("ERC1155Permit", () => {
     let OWNER;
     let SECOND;
     let erc1155;
@@ -104,7 +102,7 @@ describe.only("ERC1155Permit", () => {
                 const id = 1;
                 const value = 100;
                 const nonce = 0;
-                const deadline = 1000;
+                const deadline = Date.now() + 1000;
                 const chainId = await web3.eth.getChainId();
 
                 const approve = {
@@ -126,11 +124,90 @@ describe.only("ERC1155Permit", () => {
 
                 assert.equal(bufferToHex(pubToAddress(pubKey)), bufferToHex(Buffer.from(owner.slice(2),"hex")));
 
-                assert.equal(await erc1155.getHashTypedDataV4(owner,spender,id,value,deadline), await getApproval(erc1155, approve, nonce, deadline, chainId));
+                assert.equal(await erc1155.getHashTypedDataV4(owner,spender,id,value,deadline), msg);
 
                 await erc1155.permit(owner,spender,id,value,deadline,v,r,s);
             });
-        })
+
+            it("should revert when deadline is outdate", async () => {
+                const owner = await accounts(0);
+                const spender = await accounts(1);
+                const id = 1;
+                const value = 100;
+                const nonce = 0;
+                const deadline = 1;
+                const chainId = await web3.eth.getChainId();
+
+                const approve = {
+                    owner: owner,
+                    spender: spender,
+                    id: id,
+                    value: value
+                }
+
+                let msg = await getApproval(erc1155, approve, nonce, deadline, chainId);
+                let { r, s, v } = ecsign(
+                    Buffer.from(msg.slice(2), "hex"),
+                    Buffer.from(OWNER_KEY.slice(2), "hex"), 
+                );
+
+                await truffleAssert.reverts(erc1155.permit(owner,spender,id,value,deadline,v,r,s), "ERC1155Permit: expired deadline");
+            });
+
+            it("should revert when signer != owner", async () => {
+                const owner = await accounts(0);
+                const spender = await accounts(1);
+                const id = 1;
+                const value = 100;
+                const nonce = 0;
+                const deadline = Date.now() + 1000;
+                const chainId = await web3.eth.getChainId();
+
+                const approve = {
+                    owner: owner,
+                    spender: spender,
+                    id: id,
+                    value: value
+                }
+
+                let msg = await getApproval(erc1155, approve, nonce, deadline, chainId);
+                let { r, s, v } = ecsign(
+                    Buffer.from(msg.slice(2), "hex"),
+                    Buffer.from(OWNER_KEY.slice(2), "hex"), 
+                );
+
+                await truffleAssert.reverts(erc1155.permit(spender,spender,id,value,deadline,v,r,s), "ERC1155Permit: invalid signature");
+            });
+        });
+
+        describe("nonces()", () => {
+            it("should correctly return nonce", async () => {
+                const owner = await accounts(0);
+                const spender = await accounts(1);
+                const id = 1;
+                const value = 100;
+                const nonce = 0;
+                const deadline = Date.now() + 1000;
+                const chainId = await web3.eth.getChainId();
+
+                const approve = {
+                    owner: owner,
+                    spender: spender,
+                    id: id,
+                    value: value
+                }
+
+                let msg = await getApproval(erc1155, approve, nonce, deadline, chainId);
+                let { r, s, v } = ecsign(
+                    Buffer.from(msg.slice(2), "hex"),
+                    Buffer.from(OWNER_KEY.slice(2), "hex"), 
+                );
+
+                assert.equal("0", await erc1155.nonces(OWNER));
+                await erc1155.permit(owner,spender,id,value,deadline,v,r,s);
+                assert.equal("1", await erc1155.nonces(OWNER));
+            });
+        });
     });
 
 });
