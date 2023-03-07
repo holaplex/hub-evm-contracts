@@ -16,8 +16,8 @@ interface IERC1155Approval is  IERC1155Upgradeable {
     function safeBatchTransferFrom(
         address from_,
         address to_,
-        uint256[] memory ids_,
-        uint256[] memory amounts_,
+        uint256[] calldata ids_,
+        uint256[] calldata amounts_,
         bytes memory data_
     ) external;
 }

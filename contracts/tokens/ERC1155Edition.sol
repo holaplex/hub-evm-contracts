@@ -9,7 +9,7 @@ import "../proxy/UUPSOwnable.sol";
 import "../interfaces/tokens/IERC1155Edition.sol";
 
 contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1155Edition {
-    
+
     mapping(uint256 => Edition) public editions;
 
     modifier onlyEditionOwner(uint256 editionId_) {
@@ -31,13 +31,15 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         return editions[id_].info.uri;
     }
 
-    function createNewEdition(uint256 id_, Edition memory edition_) external override onlyOwner {
+    function createEdition(uint256 id_, Edition memory edition_, uint256 toMintAmount_) external override onlyOwner {
         require(editions[id_].owner == address(0), "ERC1155Edition: edition already exists");
 
-        edition_.owner = msg.sender;
-        edition_.createdAt = block.timestamp;
+        edition_.owner = _msgSender();
+        edition_.createdAt = uint128(block.timestamp);
 
         editions[id_] = edition_;       
+
+        _mint(_msgSender(), id_, toMintAmount_, "");
     }
 
     function disableEdit(uint256 id_) external override onlyEditionOwner(id_) {
@@ -45,7 +47,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         editions[id_].isEditEnabled = false;
     }
 
-    function editEdition(uint256 id_, ChangeableInfo calldata info_) external override onlyEditionOwner(id_) {
+    function editEdition(uint256 id_, EditionInfo calldata info_) external override onlyEditionOwner(id_) {
         require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
         editions[id_].info = info_;
     }
@@ -58,4 +60,11 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
     function mint(address to_, uint256 id_, uint256 amount_) external override onlyEditionOwner(id_) {
         _mint(to_, id_, amount_, "");
     }
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[45] private __gap;
 }

@@ -2,30 +2,30 @@
 pragma solidity ^0.8.9;
 
 interface IERC1155Edition {
-    struct ChangeableInfo {
+    struct EditionInfo {
         string description;
         string imageUri;
         string collection;
         string uri;
+        address creator;
     }
 
     struct Edition {
-        address creator;
         address owner;
+        uint128 createdAt;
         bool isEditEnabled;
-        uint256 createdAt;
-        ChangeableInfo info;
+        EditionInfo info;
     }
 
     function __ERC1155Edition_init(string calldata uri_) external;
 
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);
     
-    function createNewEdition(uint256 id_, Edition calldata info_) external;
+    function createEdition(uint256 id_, Edition calldata info_, uint256 toMintAmount_) external;
 
     function disableEdit(uint256 id_) external;
 
-    function editEdition(uint256 id_, ChangeableInfo calldata info_) external;
+    function editEdition(uint256 id_, EditionInfo calldata info_) external;
 
     function transferEditionOwnership(uint256 id_, address to_) external;
 

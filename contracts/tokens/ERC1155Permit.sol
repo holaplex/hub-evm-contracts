@@ -8,8 +8,6 @@ import "./ERC1155Approval.sol";
 
 import "../interfaces/tokens/IERC1155Permit.sol";
 
-import "hardhat/console.sol";
-
 abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155Permit {
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
@@ -80,4 +78,11 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         current = _nonce.current();
         _nonce.increment();
     }
+
+    /**
+     * This empty reserved space is put in place to allow future versions to add new
+     * variables without shifting down storage in the inheritance chain.
+     * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
+     */
+    uint256[45] private __gap;
 }
