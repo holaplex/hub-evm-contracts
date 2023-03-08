@@ -8,6 +8,10 @@ contract ERC1155ApprovalMock is ERC1155Approval {
         __ERC1155Approval_init(url_);
     }
 
+    function __ERC1155ApprovalMock_init_fails(string calldata url_) external {
+        __ERC1155Approval_init(url_);
+    }
+
     function mint(address to_, uint256 id_, uint256 amount_) external {
         _mint(to_, id_, amount_, "");
     }

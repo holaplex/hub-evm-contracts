@@ -46,6 +46,10 @@ describe("ERC1155Approval", () => {
         "Initializable: contract is already initialized"
       );
     });
+
+    it("should fail in onlyInitializing", async () => {
+      await truffleAssert.reverts(erc1155.__ERC1155ApprovalMock_init_fails("http://"),"Initializable: contract is not initializing'");
+    });
   });
 
   describe("initialized contract", () => {

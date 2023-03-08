@@ -8,4 +8,11 @@ contract ERC1155PermitMock is ERC1155Permit {
         __ERC1155PermitUpgradeable_init(url_);
     }
 
+    function __ERC1155PermitMock_init_fails(string calldata url_) external {
+        __ERC1155PermitUpgradeable_init(url_);
+    }
+
+    function __ERC1155PermitUpgradeable_init_unchained_fails() external {
+        __ERC1155PermitUpgradeable_init_unchained();
+    }
 }

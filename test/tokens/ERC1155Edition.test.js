@@ -4,13 +4,39 @@ const truffleAssert = require("truffle-assertions");
 const { assert } = require("chai");
 const { artifacts, web3 } = require("hardhat");
 
+
 const ERC1155Edition = artifacts.require("ERC1155Edition");
+const IERC1155Edition = artifacts.require("IERC1155Edition");
+const IERC2981 = artifacts.require("IERC2981Upgradeable");
+const IERC1155Upgradeable = artifacts.require("IERC1155Upgradeable");
+const IERC165Upgradeable = artifacts.require("IERC165Upgradeable");
 const BaseProxy = artifacts.require("BaseProxy");
 
 ERC1155Edition.numberFormat = "BigInt";
 BaseProxy.numberFormat = "BigInt";
+IERC1155Edition.numberFormat = "BigInt";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
+function getInterfaceId(interface, withSupportsInterface) { 
+  let selector = web3.utils.hexToBytes("0x00000000");
+  interface.contract._jsonInterface.map((item) => {
+        if (item.type != "event" && (withSupportsInterface || item.name != "supportsInterface")){
+          selector = byteXOR(selector, web3.utils.hexToBytes(item.signature))
+        }
+      }
+    )
+  
+  return web3.utils.bytesToHex(selector);
+}
+
+function byteXOR(first, second) {
+  let result = new Uint8Array(first.length);
+  for (let i = 0; i < first.length; i++) {
+    result[i] = first[i] ^ second[i];
+  }
+  return result;
+}
 
 describe("ERC1155Edition", () => {
   let OWNER;
@@ -208,6 +234,20 @@ describe("ERC1155Edition", () => {
         await nft.createEdition(editionId, editionInfo, amount);
         await nft.disableEdit(editionId);
         await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "ERC1155Edition: edit disabled");
+      });
+    });
+
+    describe("supportsInterface()", () => {
+      it("should pass supportsInterface", async () => {
+        let ierc1155Edition = await IERC1155Edition.at(nft.address);
+        let ierc2981 = await IERC2981.at(nft.address);
+        let ierc1155 = await IERC1155Upgradeable.at(nft.address);
+        let ierc165 = await IERC165Upgradeable.at(nft.address);
+
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155Edition, true)), true); 
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155, false)), true);
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc2981, false)), true);  
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc165, true)), true);
       });
     });
   });
