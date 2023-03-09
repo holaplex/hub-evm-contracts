@@ -21,11 +21,13 @@ interface IERC1155Edition {
 
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);
     
-    function createEdition(uint256 id_, Edition calldata info_, uint256 toMintAmount_) external;
+    function createEdition(uint256 id_, Edition calldata info_, uint256 toMintAmount_, uint96 feeNumerator_) external;
 
     function disableEdit(uint256 id_) external;
 
     function editEdition(uint256 id_, EditionInfo calldata info_) external;
+
+    function resetRoyalty(uint256 id_, address receiver_, uint96 feeNumerator_) external;
 
     function transferEditionOwnership(uint256 id_, address to_) external;
 

@@ -4,7 +4,6 @@ const truffleAssert = require("truffle-assertions");
 const { assert } = require("chai");
 const { artifacts, web3 } = require("hardhat");
 
-
 const ERC1155Edition = artifacts.require("ERC1155Edition");
 const IERC1155Edition = artifacts.require("IERC1155Edition");
 const IERC2981 = artifacts.require("IERC2981Upgradeable");
@@ -75,6 +74,7 @@ describe("ERC1155Edition", () => {
   });
 
   describe("initialized contract", () => {
+    const feeNumerator = 10**3;
     const amount = 15;
     const editionId = 123;
     const editionInfo = {
@@ -96,9 +96,12 @@ describe("ERC1155Edition", () => {
 
     describe("createEdition()", () => {
       it("should create a new edition with the correct metadata", async () => {
-        let tx = await nft.createEdition(editionId, editionInfo, amount);
+        let tx = await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
 
         let editionInfoContract = await nft.editions(editionId);
+        let info = await nft.royaltyInfo(editionId, 1);
+
+        assert.equal(info[0], OWNER);
 
         assert.equal(editionInfoContract.info.description, editionInfo.info.description);
         assert.equal(editionInfoContract.info.imageUri, editionInfo.info.imageUri);
@@ -115,16 +118,16 @@ describe("ERC1155Edition", () => {
 
       it("should revert when caller is not owner", async () => {
         await truffleAssert.reverts(
-          nft.createEdition(editionId, editionInfo, amount, { from: SECOND }),
+          nft.createEdition(editionId, editionInfo, amount, feeNumerator, { from: SECOND }),
           "Ownable: caller is not the owner"
         );
       });
 
       it("should revert when edition already exists", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
 
         await truffleAssert.reverts(
-          nft.createEdition(editionId, editionInfo, amount),
+          nft.createEdition(editionId, editionInfo, amount, feeNumerator),
           "ERC1155Edition: edition already exists"
         );
       });
@@ -132,7 +135,7 @@ describe("ERC1155Edition", () => {
 
     describe("transferEditionOwnership()", () => {
       beforeEach("create edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
       });
 
       it("should move transfer edition ownership", async () => {
@@ -155,7 +158,7 @@ describe("ERC1155Edition", () => {
 
     describe("mint()", () => {
       beforeEach("create edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
       });
 
       it("should mint 100 tokens", async () => {
@@ -174,7 +177,7 @@ describe("ERC1155Edition", () => {
 
     describe("uri()", () => {
       it("should correctly return token uri", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
 
         assert.equal(editionInfo.info.uri, await nft.uri(editionId));
       });
@@ -182,7 +185,7 @@ describe("ERC1155Edition", () => {
 
     describe("disableEdit()", () => {
       beforeEach(async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
       });
 
       it("should disable edit", async () => {
@@ -193,11 +196,6 @@ describe("ERC1155Edition", () => {
 
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(nft.disableEdit(editionId, { from: SECOND }), "ERC1155Edition: not edititon owner");
-      });
-
-      it("should revert when edit disabled", async () => {
-        await nft.disableEdit(editionId);
-        await truffleAssert.reverts(nft.disableEdit(editionId), "ERC1155Edition: edit disabled");
       });
     });
 
@@ -211,7 +209,7 @@ describe("ERC1155Edition", () => {
       };
 
       it("should correctly edit edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
 
         await nft.editEdition(editionId, newInfo);
 
@@ -231,9 +229,36 @@ describe("ERC1155Edition", () => {
       });
 
       it("should revert when edit disabled", async () => {
-        await nft.createEdition(editionId, editionInfo, amount);
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
         await nft.disableEdit(editionId);
         await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "ERC1155Edition: edit disabled");
+      });
+    });
+
+    describe("resetRoyalty()", () => {
+      const newNumerator = 10**2;
+
+      it("should set new royalty options", async () => {
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.resetRoyalty(editionId, SECOND, newNumerator);
+
+        let info = await nft.royaltyInfo(editionId, newNumerator);
+
+        assert.equal(info[0], SECOND);
+      });
+
+      it("should revert when edit disabled", async () => {
+        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.disableEdit(editionId);
+
+        await truffleAssert.reverts(nft.resetRoyalty(editionId, SECOND, newNumerator), "ERC1155Edition: edit disabled");
+      });
+
+      it("should revert when try to call from not edition owner", async () => {
+        await truffleAssert.reverts(
+          nft.resetRoyalty(editionId, SECOND, newNumerator, {from: SECOND}),
+          "ERC1155Edition: not edititon owner"
+        );
       });
     });
 

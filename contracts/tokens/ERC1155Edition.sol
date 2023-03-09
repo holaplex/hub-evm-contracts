@@ -31,7 +31,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         return editions[id_].info.uri;
     }
 
-    function createEdition(uint256 id_, Edition memory edition_, uint256 toMintAmount_) external override onlyOwner {
+    function createEdition(uint256 id_, Edition memory edition_, uint256 toMintAmount_, uint96 feeNumerator_) external override onlyOwner {
         require(editions[id_].owner == address(0), "ERC1155Edition: edition already exists");
 
         edition_.owner = _msgSender();
@@ -40,16 +40,22 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         editions[id_] = edition_;       
 
         _mint(_msgSender(), id_, toMintAmount_, "");
+        _setTokenRoyalty(id_, _msgSender(), feeNumerator_);
     }
 
     function disableEdit(uint256 id_) external override onlyEditionOwner(id_) {
-        require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
         editions[id_].isEditEnabled = false;
     }
 
     function editEdition(uint256 id_, EditionInfo calldata info_) external override onlyEditionOwner(id_) {
         require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
         editions[id_].info = info_;
+    }
+
+    function resetRoyalty(uint256 id_, address receiver_, uint96 feeNumerator_) external override onlyEditionOwner(id_) {
+        require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
+        _resetTokenRoyalty(id_);
+        _setTokenRoyalty(id_, receiver_, feeNumerator_);
     }
 
     function transferEditionOwnership(uint256 id_, address to_) public override onlyEditionOwner(id_) {

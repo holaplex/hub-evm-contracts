@@ -2,21 +2,13 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
 
 import "./proxy/UUPSOwnable.sol";
 import "./tokens/ERC1155Edition.sol";
+import "./interfaces/INFTSale.sol";
 
-contract NFTSale is UUPSOwnable {
-
-    struct Offer {
-        address saler;
-        bool isClosed;
-        uint256 tokenId;
-        uint256 currentAmount;
-        uint256 totalAmount;
-        uint256 priceForToken;
-    }
-
+contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
     ERC1155Edition public editionNFT;
 
     Offer[] private _offers;
@@ -29,12 +21,20 @@ contract NFTSale is UUPSOwnable {
         _;
     }
 
-    function __NFTSale_init(address editionNFTAddress_) external initializer {
+    function __NFTSale_init(address editionNFTAddress_) external  initializer {
         __UUPSOwnable_init();
         editionNFT = ERC1155Edition(editionNFTAddress_);
     }
 
-    function crateSale(Offer memory offer_) external onlyOwnerOrSpender(offer_.saler) returns(uint256) {
+    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+        return interfaceId == type(INFTSale).interfaceId;
+    }
+
+    function getOffer(uint256 saleId_) external view returns(Offer memory){
+        return _offers[saleId_];
+    }
+
+    function createSale(Offer memory offer_) external  onlyOwnerOrSpender(offer_.saler) returns(uint256) {
         return _createSale(offer_);
     }
 
@@ -44,39 +44,62 @@ contract NFTSale is UUPSOwnable {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external onlyOwnerOrSpender(offer_.saler) returns(uint256) {
+    ) external  onlyOwnerOrSpender(offer_.saler) returns(uint256) {
         editionNFT.permit(offer_.saler, address(this), offer_.tokenId, offer_.totalAmount, deadline_, v_, r_, s_);
         
         return _createSale(offer_);
     }
 
-    function deleteSale(uint256 saleId_) external onlyOwnerOrSpender(_offers[saleId_].saler) {
+    function deleteSale(uint256 saleId_) external  onlyOwnerOrSpender(_offers[saleId_].saler) {
         Offer storage _offer = _offers[saleId_];
         editionNFT.safeTransferFrom(address(this), _msgSender(), _offer.tokenId, _offer.totalAmount - _offer.currentAmount, "");
         _offer.isClosed = true;
     }
 
-    function buy(uint256 saleId_, uint256 amount_) external payable {
+    function buy(uint256 saleId_, uint256 amount_) external  payable {
         Offer storage _offer = _offers[saleId_];
-        uint256 payableAmount = amount_ * _offer.priceForToken;
+        uint256 nftCost = amount_ * _offer.priceForToken;
+        (address receiver, uint256 fee) = editionNFT.royaltyInfo(_offer.tokenId, nftCost);
+        uint256 payableAmount = nftCost + fee;
 
         require(!_offer.isClosed, "NFTSale: sales closed");
         require(_offer.currentAmount >= amount_, "NFTSale: insufficient token amount");
-        require(msg.value >= payableAmount, "NFTSale: insufficient MATIC amount");
+        require(msg.value >= nftCost, "NFTSale: insufficient MATIC amount");
 
         _offer.currentAmount -= amount_;
         if (_offer.currentAmount == 0) {
             _offer.isClosed = true;
         }
 
-        editionNFT.safeTransferFrom(address(this), _msgSender(), saleId_, amount_, "");
+        _sendNative(receiver, fee);
+
+        editionNFT.safeTransferFrom(address(this), _msgSender(), _offer.tokenId, amount_, "");
 
         /// @dev push back eth
 
         if (msg.value > payableAmount) {
-            (bool sent,) = _msgSender().call{value: msg.value}("");
-            require(sent, "NFTSale: failed to send ETH");
+            _sendNative(_msgSender(), msg.value - payableAmount);
         }
+    }
+
+    function onERC1155Received(
+        address operator,
+        address from,
+        uint256 id,
+        uint256 value,
+        bytes calldata data
+    ) external returns (bytes4){
+        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
+    }
+
+    function onERC1155BatchReceived(
+        address operator,
+        address from,
+        uint256[] calldata ids,
+        uint256[] calldata values,
+        bytes calldata data
+    ) external returns (bytes4){
+        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
     function _createSale(Offer memory offer_) internal returns(uint256) {
@@ -90,6 +113,11 @@ contract NFTSale is UUPSOwnable {
         _latestId = currentId + 1;
 
         return currentId;
+    }
+
+    function _sendNative(address to_, uint256 amount_) internal {
+        (bool sent,) = to_.call{value: amount_}("");
+        require(sent, "NFTSale: failed to send ETH");
     }
 
     /**
