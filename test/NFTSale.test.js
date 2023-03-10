@@ -3,8 +3,12 @@ const { toBN, accounts, wei } = require("../scripts/utils/utils");
 const Reverter = require("./helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 const { assert } = require("chai");
+const { getApproval } = require("../scripts/utils/permit");
+const { ecsign } = require("ethereumjs-util");
+const { getInterfaceId } = require("../scripts/utils/interfaceId");
 
 const ERC1155Edition = artifacts.require("ERC1155Edition");
+const INFTSale = artifacts.require("INFTSale");
 const NFTSale = artifacts.require("NFTSale");
 const BaseProxy = artifacts.require("BaseProxy");
 
@@ -12,9 +16,12 @@ ERC1155Edition.numberFormat = "BigInt";
 BaseProxy.numberFormat = "BigInt";
 NFTSale.numberFormat = "BigInt";
 
-describe.only("NFTSale", () => {
+const OWNER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
+
+describe("NFTSale", () => {
   let OWNER;
   let SECOND;
+  let THIRD;
   let nft;
   let nftSale;
 
@@ -23,6 +30,7 @@ describe.only("NFTSale", () => {
   before("setup", async () => {
     OWNER = await accounts(0);
     SECOND = await accounts(1);
+    THIRD = await accounts(2);
 
     let _erc1155Edition = await ERC1155Edition.new();
     let proxy = await BaseProxy.new("0x", _erc1155Edition.address);
@@ -92,7 +100,6 @@ describe.only("NFTSale", () => {
             await nft.approve(nftSale.address, editionId, amountToMint);
         
             await nftSale.createSale(offer);
-
             let offerInStorage = await nftSale.getOffer(0);
 
             assert.equal(offerInStorage.saler, offer.saler);
@@ -103,13 +110,64 @@ describe.only("NFTSale", () => {
             assert.equal(offerInStorage.priceForToken, offer.priceForToken);
         });
 
+        it("should create sale not from contract owner", async () => {
+          await nft.safeTransferFrom(OWNER, SECOND, editionId, offer.totalAmount, "0x");
+          
+          const newOffer = {
+            saler: SECOND,
+            isClosed: false,
+            tokenId: editionId,
+            currentAmount: 5,
+            totalAmount: 5,
+            priceForToken: wei("1"),
+          }
+
+          await nft.approve(nftSale.address, editionId, offer.totalAmount, {from: SECOND});
+        
+          await nftSale.createSale(newOffer, {from:SECOND});
+          let offerInStorage = await nftSale.getOffer(0);
+
+          assert.equal(offerInStorage.saler, newOffer.saler);
+          assert.equal(offerInStorage.isClosed, newOffer.isClosed);
+          assert.equal(offerInStorage.editionId, newOffer.editionId);
+          assert.equal(offerInStorage.currentAmount, newOffer.currentAmount);
+          assert.equal(offerInStorage.totalAmount, newOffer.totalAmount);
+          assert.equal(offerInStorage.priceForToken, newOffer.priceForToken);
+        });
+
         it("should revert at onlyOwnerOrSpender modifier", async () => {
-            await truffleAssert.reverts(nftSale.createSale(offer, {from:SECOND}), "NFTSale: caller is not the owner or spender");
+            await truffleAssert.reverts(nftSale.createSale(offer, {from:THIRD}), "NFTSale: caller is not the owner or spender");
         });
     });
 
     describe("createSalePermit", () => {
+      it("should create sale", async () => {
+        const deadline = Date.now() + 1000;
+        const chainId = await web3.eth.getChainId();
+        const nonce = 0;
+        const name = "ERC1155Permit";
 
+        const approve = {
+          owner: offer.saler,
+          spender: nftSale.address,
+          id: editionId,
+          value: offer.totalAmount,
+        };
+
+        let msg = await getApproval(nft, name, approve, nonce, deadline, chainId);
+        let { r, s, v } = ecsign(Buffer.from(msg.slice(2), "hex"), Buffer.from(OWNER_KEY.slice(2), "hex"));
+
+        await nftSale.createSalePermit(offer, deadline, v, r, s);
+
+        let offerInStorage = await nftSale.getOffer(0);
+
+        assert.equal(offerInStorage.saler, offer.saler);
+        assert.equal(offerInStorage.isClosed, offer.isClosed);
+        assert.equal(offerInStorage.editionId, offer.editionId);
+        assert.equal(offerInStorage.currentAmount, offer.currentAmount);
+        assert.equal(offerInStorage.totalAmount, offer.totalAmount);
+        assert.equal(offerInStorage.priceForToken, offer.priceForToken);
+    });
     });
 
     describe("deleteSale", () => {
@@ -195,6 +253,14 @@ describe.only("NFTSale", () => {
 
       it("should revert when try to spend less than need", async () => {
         await truffleAssert.reverts(nftSale.buy(saleId, offer.currentAmount, {from: SECOND, value: wei("2")}), "NFTSale: insufficient MATIC amount");
+      });
+    });
+
+    describe("supportsInterface()", () => {
+      it("should pass", async () => {
+        let interface = await INFTSale.at(nft.address);
+
+        assert.equal(await nftSale.supportsInterface(getInterfaceId(interface,false)), true);
       });
     });
   });
