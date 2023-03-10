@@ -51,8 +51,14 @@ describe("ERC1155Permit", () => {
     });
 
     it("should fails in onlyInitializing", async () => {
-      await truffleAssert.reverts(erc1155.__ERC1155PermitMock_init_fails("http://"),"Initializable: contract is not initializing'");
-      await truffleAssert.reverts(erc1155.__ERC1155PermitUpgradeable_init_unchained_fails(),"Initializable: contract is not initializing'");
+      await truffleAssert.reverts(
+        erc1155.__ERC1155PermitMock_init_fails("http://"),
+        "Initializable: contract is not initializing"
+      );
+      await truffleAssert.reverts(
+        erc1155.__ERC1155PermitUpgradeable_init_unchained_fails(),
+        "Initializable: contract is not initializing"
+      );
     });
   });
 

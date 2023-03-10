@@ -6,9 +6,8 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155Supp
 import "../interfaces/tokens/IERC1155Approval.sol";
 
 contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
-    
     mapping(bytes32 => uint256) private _allowances;
-   
+
     function __ERC1155Approval_init(string calldata uri) internal onlyInitializing {
         __ERC1155Supply_init();
         __ERC1155_init(uri);
@@ -19,7 +18,11 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
         return true;
     }
 
-    function allowance(address from_, address to_, uint256 id_) public  override view returns(uint256) {
+    function allowance(
+        address from_,
+        address to_,
+        uint256 id_
+    ) public view override returns (uint256) {
         return _allowances[keccak256(abi.encode(from_, to_, id_))];
     }
 
@@ -32,7 +35,7 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     ) public override(IERC1155Approval, ERC1155Upgradeable) {
         address sender_ = _msgSender();
 
-        if (sender_ != from_ && !isApprovedForAll(from_, sender_)){
+        if (sender_ != from_ && !isApprovedForAll(from_, sender_)) {
             _spendAllowance(from_, sender_, id_, amount_);
         }
 
@@ -48,19 +51,14 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     ) public override(IERC1155Approval, ERC1155Upgradeable) {
         address sender_ = _msgSender();
 
-        if (sender_ != from_ && !isApprovedForAll(from_, sender_)){
+        if (sender_ != from_ && !isApprovedForAll(from_, sender_)) {
             _batchSpendAllowance(from_, sender_, ids_, amounts_);
         }
 
         _safeBatchTransferFrom(from_, to_, ids_, amounts_, data_);
     }
 
-    function _approve(
-        address owner_,
-        address spender_,
-        uint256 id_,
-        uint256 amount_
-    ) internal {
+    function _approve(address owner_, address spender_, uint256 id_, uint256 amount_) internal {
         require(owner_ != address(0), "ERC1155Approval: approve from the zero address");
         require(spender_ != address(0), "ERC1155Approval: approve to the zero address");
         require(owner_ != spender_, "ERC1155Approval: spender must not be owner");
@@ -68,7 +66,7 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
         _allowances[keccak256(abi.encode(owner_, spender_, id_))] = amount_;
     }
 
-     function _spendAllowance(
+    function _spendAllowance(
         address owner_,
         address spender_,
         uint256 id_,
@@ -76,8 +74,11 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     ) internal {
         uint256 currentAllowance_ = allowance(owner_, spender_, id_);
         if (currentAllowance_ != type(uint256).max) {
-            require(allowance(owner_, spender_, id_) >= amount_, "ERC1155Approval: insufficient allowance");
-                _approve(owner_, spender_, id_, currentAllowance_ - amount_);
+            require(
+                allowance(owner_, spender_, id_) >= amount_,
+                "ERC1155Approval: insufficient allowance"
+            );
+            _approve(owner_, spender_, id_, currentAllowance_ - amount_);
         }
     }
 

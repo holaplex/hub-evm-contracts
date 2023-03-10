@@ -1,6 +1,4 @@
-
 interface INFTSale {
-
     struct Offer {
         address saler;
         bool isClosed;
@@ -11,8 +9,8 @@ interface INFTSale {
     }
 
     function __NFTSale_init(address editionNFTAddress_) external;
-    
-    function createSale(Offer memory offer_) external returns(uint256);
+
+    function createSale(Offer memory offer_) external returns (uint256);
 
     function createSalePermit(
         Offer memory offer_,
@@ -20,11 +18,11 @@ interface INFTSale {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external returns(uint256);
+    ) external returns (uint256);
 
     function deleteSale(uint256 saleId_) external;
 
     function buy(uint256 saleId_, uint256 amount_) external payable;
 
-    function getOffer(uint256 saleId_) external view returns(Offer memory);
+    function getOffer(uint256 saleId_) external view returns (Offer memory);
 }

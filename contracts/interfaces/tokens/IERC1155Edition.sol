@@ -20,8 +20,13 @@ interface IERC1155Edition {
     function __ERC1155Edition_init(string calldata uri_) external;
 
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);
-    
-    function createEdition(uint256 id_, Edition calldata info_, uint256 toMintAmount_, uint96 feeNumerator_) external;
+
+    function createEdition(
+        uint256 id_,
+        Edition calldata info_,
+        uint256 toMintAmount_,
+        uint96 feeNumerator_
+    ) external;
 
     function disableEdit(uint256 id_) external;
 
@@ -31,5 +36,5 @@ interface IERC1155Edition {
 
     function transferEditionOwnership(uint256 id_, address to_) external;
 
-    function mint(address to_, uint256 id_, uint256 amount_) external; 
+    function mint(address to_, uint256 id_, uint256 amount_) external;
 }

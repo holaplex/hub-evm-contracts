@@ -12,7 +12,7 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
     using CountersUpgradeable for CountersUpgradeable.Counter;
 
     mapping(address => CountersUpgradeable.Counter) private _nonces;
-     
+
     bytes32 private _PERMIT_TYPEHASH;
 
     function __ERC1155PermitUpgradeable_init(string calldata uri_) internal onlyInitializing {
@@ -22,10 +22,12 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
     }
 
     function __ERC1155PermitUpgradeable_init_unchained() internal onlyInitializing {
-        _PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 id,uint256 value,uint256 nonce,uint256 deadline)");
+        _PERMIT_TYPEHASH = keccak256(
+            "Permit(address owner,address spender,uint256 id,uint256 value,uint256 nonce,uint256 deadline)"
+        );
     }
 
-    function getPermitTypeHash() external view returns(bytes32) {
+    function getPermitTypeHash() external view returns (bytes32) {
         return _PERMIT_TYPEHASH;
     }
 
@@ -36,8 +38,17 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         uint256 value_,
         uint256 deadline_
     ) external view returns (bytes32) {
-        bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner_, spender_, id_, value_, _nonces[owner_].current(), deadline_));
-        
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _PERMIT_TYPEHASH,
+                owner_,
+                spender_,
+                id_,
+                value_,
+                _nonces[owner_].current(),
+                deadline_
+            )
+        );
 
         return _hashTypedDataV4(structHash);
     }
@@ -54,12 +65,22 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
     ) external override {
         require(block.timestamp <= deadline_, "ERC1155Permit: expired deadline");
 
-        bytes32 structHash = keccak256(abi.encode(_PERMIT_TYPEHASH, owner_, spender_, id_, value_, _useNonce(owner_), deadline_));
+        bytes32 structHash = keccak256(
+            abi.encode(
+                _PERMIT_TYPEHASH,
+                owner_,
+                spender_,
+                id_,
+                value_,
+                _useNonce(owner_),
+                deadline_
+            )
+        );
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
         address signer = ECDSAUpgradeable.recover(hash, v_, r_, s_);
-        
+
         require(signer == owner_, "ERC1155Permit: invalid signature");
 
         _approve(owner_, spender_, id_, value_);
@@ -69,7 +90,7 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         return _nonces[owner_].current();
     }
 
-    function DOMAIN_SEPARATOR() external view override   returns (bytes32) {
+    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
         return _domainSeparatorV4();
     }
 

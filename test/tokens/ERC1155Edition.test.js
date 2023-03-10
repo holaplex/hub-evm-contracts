@@ -55,7 +55,7 @@ describe("ERC1155Edition", () => {
   });
 
   describe("initialized contract", () => {
-    const feeNumerator = 10**3;
+    const feeNumerator = 10 ** 3;
     const amount = 15;
     const editionId = 123;
     const editionInfo = {
@@ -185,7 +185,7 @@ describe("ERC1155Edition", () => {
         description: "newDescription",
         imageUri: "/uri/new",
         collection: "newCollection",
-        uri: "placeholder://new",        
+        uri: "placeholder://new",
         creator: "0x76e98f7d84603AEb97cd1c89A80A9e914f181679",
       };
 
@@ -217,7 +217,7 @@ describe("ERC1155Edition", () => {
     });
 
     describe("resetRoyalty()", () => {
-      const newNumerator = 10**2;
+      const newNumerator = 10 ** 2;
 
       it("should set new royalty options", async () => {
         await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
@@ -237,7 +237,7 @@ describe("ERC1155Edition", () => {
 
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
-          nft.resetRoyalty(editionId, SECOND, newNumerator, {from: SECOND}),
+          nft.resetRoyalty(editionId, SECOND, newNumerator, { from: SECOND }),
           "ERC1155Edition: not edititon owner"
         );
       });
@@ -250,9 +250,9 @@ describe("ERC1155Edition", () => {
         let ierc1155 = await IERC1155Upgradeable.at(nft.address);
         let ierc165 = await IERC165Upgradeable.at(nft.address);
 
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155Edition, true)), true); 
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155Edition, true)), true);
         assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155, false)), true);
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc2981, false)), true);  
+        assert.equal(await nft.supportsInterface(getInterfaceId(ierc2981, false)), true);
         assert.equal(await nft.supportsInterface(getInterfaceId(ierc165, true)), true);
       });
     });

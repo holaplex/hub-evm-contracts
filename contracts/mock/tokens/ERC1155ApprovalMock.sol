@@ -16,7 +16,12 @@ contract ERC1155ApprovalMock is ERC1155Approval {
         _mint(to_, id_, amount_, "");
     }
 
-    function mockedApprove(address owner_, address spender_, uint256 id_, uint256 amount_) external {
+    function mockedApprove(
+        address owner_,
+        address spender_,
+        uint256 id_,
+        uint256 amount_
+    ) external {
         _approve(owner_, spender_, id_, amount_);
     }
 }

@@ -12,16 +12,19 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
     ERC1155Edition public editionNFT;
 
     Offer[] private _offers;
-    mapping(uint256 => uint256[]) public nftIdToSaleIds; 
+    mapping(uint256 => uint256[]) public nftIdToSaleIds;
 
     uint256 private _latestId;
 
     modifier onlyOwnerOrSpender(address spender_) {
-        require(owner() == _msgSender() || spender_ == _msgSender(), "NFTSale: caller is not the owner or spender");
+        require(
+            owner() == _msgSender() || spender_ == _msgSender(),
+            "NFTSale: caller is not the owner or spender"
+        );
         _;
     }
 
-    function __NFTSale_init(address editionNFTAddress_) external  initializer {
+    function __NFTSale_init(address editionNFTAddress_) external initializer {
         __UUPSOwnable_init();
         editionNFT = ERC1155Edition(editionNFTAddress_);
     }
@@ -30,11 +33,13 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
         return interfaceId == type(INFTSale).interfaceId;
     }
 
-    function getOffer(uint256 saleId_) external view returns(Offer memory){
+    function getOffer(uint256 saleId_) external view returns (Offer memory) {
         return _offers[saleId_];
     }
 
-    function createSale(Offer memory offer_) external  onlyOwnerOrSpender(offer_.saler) returns(uint256) {
+    function createSale(
+        Offer memory offer_
+    ) external onlyOwnerOrSpender(offer_.saler) returns (uint256) {
         return _createSale(offer_);
     }
 
@@ -44,19 +49,34 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external  onlyOwnerOrSpender(offer_.saler) returns(uint256) {
-        editionNFT.permit(offer_.saler, address(this), offer_.tokenId, offer_.totalAmount, deadline_, v_, r_, s_);
-        
+    ) external onlyOwnerOrSpender(offer_.saler) returns (uint256) {
+        editionNFT.permit(
+            offer_.saler,
+            address(this),
+            offer_.tokenId,
+            offer_.totalAmount,
+            deadline_,
+            v_,
+            r_,
+            s_
+        );
+
         return _createSale(offer_);
     }
 
-    function deleteSale(uint256 saleId_) external  onlyOwnerOrSpender(_offers[saleId_].saler) {
+    function deleteSale(uint256 saleId_) external onlyOwnerOrSpender(_offers[saleId_].saler) {
         Offer storage _offer = _offers[saleId_];
-        editionNFT.safeTransferFrom(address(this), _msgSender(), _offer.tokenId, _offer.totalAmount - _offer.currentAmount, "");
+        editionNFT.safeTransferFrom(
+            address(this),
+            _msgSender(),
+            _offer.tokenId,
+            _offer.totalAmount - _offer.currentAmount,
+            ""
+        );
         _offer.isClosed = true;
     }
 
-    function buy(uint256 saleId_, uint256 amount_) external  payable {
+    function buy(uint256 saleId_, uint256 amount_) external payable {
         Offer storage _offer = _offers[saleId_];
         uint256 nftCost = amount_ * _offer.priceForToken;
         (address receiver, uint256 fee) = editionNFT.royaltyInfo(_offer.tokenId, nftCost);
@@ -88,7 +108,7 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
         uint256 id,
         uint256 value,
         bytes calldata data
-    ) external returns (bytes4){
+    ) external returns (bytes4) {
         return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
     }
 
@@ -98,14 +118,21 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
         uint256[] calldata ids,
         uint256[] calldata values,
         bytes calldata data
-    ) external returns (bytes4){
-        return bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
+    ) external returns (bytes4) {
+        return
+            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
     }
 
-    function _createSale(Offer memory offer_) internal returns(uint256) {
+    function _createSale(Offer memory offer_) internal returns (uint256) {
         offer_.currentAmount = offer_.totalAmount;
-        editionNFT.safeTransferFrom(offer_.saler, address(this), offer_.tokenId, offer_.totalAmount, "");
-        
+        editionNFT.safeTransferFrom(
+            offer_.saler,
+            address(this),
+            offer_.tokenId,
+            offer_.totalAmount,
+            ""
+        );
+
         uint256 currentId = _latestId;
 
         _offers.push(offer_);
@@ -116,7 +143,7 @@ contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
     }
 
     function _sendNative(address to_, uint256 amount_) internal {
-        (bool sent,) = to_.call{value: amount_}("");
+        (bool sent, ) = to_.call{value: amount_}("");
         require(sent, "NFTSale: failed to send ETH");
     }
 
