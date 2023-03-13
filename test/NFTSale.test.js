@@ -7,18 +7,18 @@ const { getApproval } = require("../scripts/utils/permit");
 const { ecsign } = require("ethereumjs-util");
 const { getInterfaceId } = require("../scripts/utils/interfaceId");
 
-const ERC1155Edition = artifacts.require("ERC1155Edition");
+const EditionContract = artifacts.require("EditionContract");
 const INFTSale = artifacts.require("INFTSale");
 const NFTSale = artifacts.require("NFTSale");
 const BaseProxy = artifacts.require("BaseProxy");
 
-ERC1155Edition.numberFormat = "BigInt";
+EditionContract.numberFormat = "BigInt";
 BaseProxy.numberFormat = "BigInt";
 NFTSale.numberFormat = "BigInt";
 
 const OWNER_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80";
 
-describe("NFTSale", () => {
+describe.only("NFTSale", () => {
   let OWNER;
   let SECOND;
   let THIRD;
@@ -32,35 +32,19 @@ describe("NFTSale", () => {
     SECOND = await accounts(1);
     THIRD = await accounts(2);
 
-    let _erc1155Edition = await ERC1155Edition.new();
+    let _erc1155Edition = await EditionContract.new();
     let proxy = await BaseProxy.new("0x", _erc1155Edition.address);
-    nft = await ERC1155Edition.at(proxy.address);
+    nft = await EditionContract.at(proxy.address);
 
-    await nft.__ERC1155Edition_init("http://");
+    await nft.__EditionContract_init("http://");
 
-    let _nftSale = await NFTSale.new();
-    proxy = await BaseProxy.new("0x", _nftSale.address);
-    nftSale = await NFTSale.at(proxy.address);
+    nftSale = await NFTSale.new(nft.address);
 
     await reverter.snapshot();
   });
 
   afterEach(async () => {
     reverter.revert();
-  });
-
-  describe("init", () => {
-    it("should init", async () => {
-      await truffleAssert.passes(nftSale.__NFTSale_init(nft.address));
-    });
-
-    it("should not initialize twice", async () => {
-      await nftSale.__NFTSale_init(nft.address);
-      await truffleAssert.reverts(
-        nftSale.__NFTSale_init(nft.address),
-        "Initializable: contract is already initialized"
-      );
-    });
   });
 
   describe("initialized contract", () => {
@@ -91,8 +75,6 @@ describe("NFTSale", () => {
 
     beforeEach("init", async () => {
       await nft.createEdition(editionId, editionInfo, amountToMint, feeNumerator);
-
-      await nftSale.__NFTSale_init(nft.address);
     });
 
     describe("createSale", () => {

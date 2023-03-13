@@ -7,20 +7,4 @@ interface IERC1155Approval is IERC1155Upgradeable {
     function approve(address to_, uint256 id_, uint256 amount_) external returns (bool);
 
     function allowance(address from_, address to_, uint256 id_) external view returns (uint256);
-
-    function safeTransferFrom(
-        address from_,
-        address to_,
-        uint256 id_,
-        uint256 amount_,
-        bytes memory data_
-    ) external;
-
-    function safeBatchTransferFrom(
-        address from_,
-        address to_,
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
-        bytes memory data_
-    ) external;
 }

@@ -32,7 +32,7 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
         uint256 id_,
         uint256 amount_,
         bytes memory data_
-    ) public override(IERC1155Approval, ERC1155Upgradeable) {
+    ) public override(ERC1155Upgradeable, IERC1155Upgradeable) {
         address sender_ = _msgSender();
 
         if (sender_ != from_ && !isApprovedForAll(from_, sender_)) {
@@ -45,10 +45,10 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     function safeBatchTransferFrom(
         address from_,
         address to_,
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_,
+        uint256[] memory ids_,
+        uint256[] memory amounts_,
         bytes memory data_
-    ) public override(IERC1155Approval, ERC1155Upgradeable) {
+    ) public override(ERC1155Upgradeable, IERC1155Upgradeable) {
         address sender_ = _msgSender();
 
         if (sender_ != from_ && !isApprovedForAll(from_, sender_)) {
@@ -85,8 +85,8 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
     function _batchSpendAllowance(
         address owner_,
         address spender_,
-        uint256[] calldata ids_,
-        uint256[] calldata amounts_
+        uint256[] memory ids_,
+        uint256[] memory amounts_
     ) internal {
         for (uint256 i = 0; i < ids_.length; i++) {
             _spendAllowance(owner_, spender_, ids_[i], amounts_[i]);

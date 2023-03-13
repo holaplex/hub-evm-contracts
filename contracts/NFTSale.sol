@@ -2,144 +2,128 @@
 pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/IERC1155ReceiverUpgradeable.sol";
 
-import "./proxy/UUPSOwnable.sol";
-import "./tokens/ERC1155Edition.sol";
 import "./interfaces/INFTSale.sol";
+import "./interfaces/tokens/IEditionContract.sol";
 
-contract NFTSale is UUPSOwnable, IERC1155ReceiverUpgradeable, INFTSale {
-    ERC1155Edition public editionNFT;
+contract NFTSale is INFTSale {
+    IEditionContract public editionContract;
 
-    Offer[] private _offers;
-    mapping(uint256 => uint256[]) public nftIdToSaleIds;
+    mapping(uint256 => Offer[]) public offers;
 
-    uint256 private _latestId;
-
-    modifier onlyOwnerOrSpender(address spender_) {
-        require(
-            owner() == _msgSender() || spender_ == _msgSender(),
-            "NFTSale: caller is not the owner or spender"
-        );
+    modifier onlyEditionOwner(uint256 editionId_) {
+        require(msg.sender == editionContract.ownerOf(editionId_), "NFTSale: not edititon owner");
         _;
     }
 
-    function __NFTSale_init(address editionNFTAddress_) external initializer {
-        __UUPSOwnable_init();
-        editionNFT = ERC1155Edition(editionNFTAddress_);
+    constructor(address editionContractAddress_) {
+        editionContract = IEditionContract(editionContractAddress_);
     }
 
-    function supportsInterface(bytes4 interfaceId) external view returns (bool) {
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) {
         return interfaceId == type(INFTSale).interfaceId;
     }
 
-    function getOffer(uint256 saleId_) external view returns (Offer memory) {
-        return _offers[saleId_];
-    }
-
     function createSale(
-        Offer memory offer_
-    ) external onlyOwnerOrSpender(offer_.saler) returns (uint256) {
-        return _createSale(offer_);
+        uint256 id_,
+        uint256 amount_,
+        uint256 price_
+    ) external onlyEditionOwner(id_) returns (uint256) {
+        return _createSale(id_, amount_, price_, msg.sender);
     }
 
     function createSalePermit(
-        Offer memory offer_,
+        uint256 id_,
+        uint256 amount_,
+        uint256 price_,
+        address saler_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external onlyOwnerOrSpender(offer_.saler) returns (uint256) {
-        editionNFT.permit(
-            offer_.saler,
-            address(this),
-            offer_.tokenId,
-            offer_.totalAmount,
-            deadline_,
-            v_,
-            r_,
-            s_
-        );
+    ) external onlyEditionOwner(id_) returns (uint256) {
+        editionContract.permit(saler_, address(this), id_, amount_, deadline_, v_, r_, s_);
 
-        return _createSale(offer_);
+        return _createSale(id_, amount_, price_, saler_);
     }
 
-    function deleteSale(uint256 saleId_) external onlyOwnerOrSpender(_offers[saleId_].saler) {
-        Offer storage _offer = _offers[saleId_];
-        editionNFT.safeTransferFrom(
-            address(this),
-            _msgSender(),
-            _offer.tokenId,
-            _offer.totalAmount - _offer.currentAmount,
-            ""
-        );
-        _offer.isClosed = true;
+    function deleteSale(uint256 tokenId_, uint256 saleId_) external {
+        if (
+            offers[tokenId_][saleId_].currentAmount == 0 ||
+            msg.sender == offers[tokenId_][saleId_].saler
+        ) {
+            offers[tokenId_][saleId_].isClosed = true;
+        }
     }
 
-    function buy(uint256 saleId_, uint256 amount_) external payable {
-        Offer storage _offer = _offers[saleId_];
-        uint256 nftCost = amount_ * _offer.priceForToken;
-        (address receiver, uint256 fee) = editionNFT.royaltyInfo(_offer.tokenId, nftCost);
-        uint256 payableAmount = nftCost + fee;
+    function buy(uint256 tokenId_, uint256 saleId_, uint256 amount_) external payable {
+        Offer storage offer = offers[tokenId_][saleId_];
+        require(!offer.isClosed, "NFTSale: sales closed");
 
-        require(!_offer.isClosed, "NFTSale: sales closed");
-        require(_offer.currentAmount >= amount_, "NFTSale: insufficient token amount");
-        require(msg.value >= nftCost, "NFTSale: insufficient MATIC amount");
+        require(
+            editionContract.balanceOf(offer.saler, tokenId_) >= amount_,
+            "NFTSale: saler out of balance"
+        );
+        require(
+            editionContract.allowance(offer.saler, address(this), tokenId_) >= amount_,
+            "NFTSale: insufficient saler's allowance"
+        );
 
-        _offer.currentAmount -= amount_;
-        if (_offer.currentAmount == 0) {
-            _offer.isClosed = true;
+        uint256 offerPrice_ = amount_ * offer.priceForToken;
+        require(msg.value >= offerPrice_, "NFTSale: insufficient MATIC amount");
+
+        uint256 currentAmount_ = offer.currentAmount;
+        require(currentAmount_ >= amount_, "NFTSale: insufficient token amount");
+
+        (address receiver_, uint256 fee_) = editionContract.royaltyInfo(
+            offer.tokenId,
+            offerPrice_
+        );
+
+        currentAmount_ -= amount_;
+
+        offer.currentAmount = currentAmount_;
+
+        if (currentAmount_ == 0) {
+            offer.isClosed = true;
         }
 
-        _sendNative(receiver, fee);
+        _sendNative(receiver_, fee_);
+        _sendNative(offer.saler, offerPrice_ - fee_);
 
-        editionNFT.safeTransferFrom(address(this), _msgSender(), _offer.tokenId, amount_, "");
+        editionContract.safeTransferFrom(offer.saler, msg.sender, offer.tokenId, amount_, "");
 
         /// @dev push back eth
 
-        if (msg.value > payableAmount) {
-            _sendNative(_msgSender(), msg.value - payableAmount);
+        if (msg.value > offerPrice_) {
+            _sendNative(msg.sender, msg.value - offerPrice_);
         }
     }
 
-    function onERC1155Received(
-        address operator,
-        address from,
-        uint256 id,
-        uint256 value,
-        bytes calldata data
-    ) external returns (bytes4) {
-        return bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"));
-    }
+    function _createSale(
+        uint256 id_,
+        uint256 amount_,
+        uint256 price_,
+        address saler_
+    ) internal returns (uint256) {
+        require(
+            editionContract.allowance(saler_, address(this), id_) >= amount_,
+            "NFTSale: insufficient allowance"
+        );
+        require(editionContract.balanceOf(saler_, id_) >= amount_, "NFTSale: insufficient amount");
 
-    function onERC1155BatchReceived(
-        address operator,
-        address from,
-        uint256[] calldata ids,
-        uint256[] calldata values,
-        bytes calldata data
-    ) external returns (bytes4) {
-        return
-            bytes4(keccak256("onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"));
-    }
-
-    function _createSale(Offer memory offer_) internal returns (uint256) {
-        offer_.currentAmount = offer_.totalAmount;
-        editionNFT.safeTransferFrom(
-            offer_.saler,
-            address(this),
-            offer_.tokenId,
-            offer_.totalAmount,
-            ""
+        Offer[] storage _tokenOffers = offers[id_];
+        _tokenOffers.push(
+            Offer({
+                saler: saler_,
+                isClosed: false,
+                tokenId: id_,
+                currentAmount: amount_,
+                priceForToken: price_
+            })
         );
 
-        uint256 currentId = _latestId;
-
-        _offers.push(offer_);
-        nftIdToSaleIds[offer_.tokenId].push(currentId);
-        _latestId = currentId + 1;
-
-        return currentId;
+        return _tokenOffers.length - 1;
     }
 
     function _sendNative(address to_, uint256 amount_) internal {

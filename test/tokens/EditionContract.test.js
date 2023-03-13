@@ -5,20 +5,20 @@ const { assert } = require("chai");
 const { artifacts, web3 } = require("hardhat");
 const { getInterfaceId } = require("../../scripts/utils/interfaceId");
 
-const ERC1155Edition = artifacts.require("ERC1155Edition");
-const IERC1155Edition = artifacts.require("IERC1155Edition");
+const EditionContract = artifacts.require("EditionContract");
+const IEditionContract = artifacts.require("IEditionContract");
 const IERC2981 = artifacts.require("IERC2981Upgradeable");
 const IERC1155Upgradeable = artifacts.require("IERC1155Upgradeable");
 const IERC165Upgradeable = artifacts.require("IERC165Upgradeable");
 const BaseProxy = artifacts.require("BaseProxy");
 
-ERC1155Edition.numberFormat = "BigInt";
+EditionContract.numberFormat = "BigInt";
 BaseProxy.numberFormat = "BigInt";
-IERC1155Edition.numberFormat = "BigInt";
+IEditionContract.numberFormat = "BigInt";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-describe("ERC1155Edition", () => {
+describe("EditionContract", () => {
   let OWNER;
   let SECOND;
   let nft;
@@ -29,9 +29,9 @@ describe("ERC1155Edition", () => {
     OWNER = await accounts(0);
     SECOND = await accounts(1);
 
-    let _erc1155Edition = await ERC1155Edition.new();
+    let _erc1155Edition = await EditionContract.new();
     let proxy = await BaseProxy.new("0x", _erc1155Edition.address);
-    nft = await ERC1155Edition.at(proxy.address);
+    nft = await EditionContract.at(proxy.address);
 
     await reverter.snapshot();
   });
@@ -42,13 +42,13 @@ describe("ERC1155Edition", () => {
 
   describe("init", () => {
     it("should init", async () => {
-      await truffleAssert.passes(nft.__ERC1155Edition_init("http://"));
+      await truffleAssert.passes(nft.__EditionContract_init("http://"));
     });
 
     it("should not initialize twice", async () => {
-      await nft.__ERC1155Edition_init("http://");
+      await nft.__EditionContract_init("http://");
       await truffleAssert.reverts(
-        nft.__ERC1155Edition_init("http://"),
+        nft.__EditionContract_init("http://"),
         "Initializable: contract is already initialized"
       );
     });
@@ -72,7 +72,7 @@ describe("ERC1155Edition", () => {
     };
 
     beforeEach("init and mint", async () => {
-      await nft.__ERC1155Edition_init("http://");
+      await nft.__EditionContract_init("http://");
     });
 
     describe("createEdition()", () => {
@@ -109,7 +109,7 @@ describe("ERC1155Edition", () => {
 
         await truffleAssert.reverts(
           nft.createEdition(editionId, editionInfo, amount, feeNumerator),
-          "ERC1155Edition: edition already exists"
+          "EditionContract: edition already exists"
         );
       });
     });
@@ -128,7 +128,7 @@ describe("ERC1155Edition", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.transferEditionOwnership(editionId, SECOND, { from: SECOND }),
-          "ERC1155Edition: not edititon owner"
+          "EditionContract: not edititon owner"
         );
       });
 
@@ -151,7 +151,7 @@ describe("ERC1155Edition", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.mint(SECOND, editionId, 100, { from: SECOND }),
-          "ERC1155Edition: not edititon owner"
+          "EditionContract: not edititon owner"
         );
       });
     });
@@ -176,7 +176,10 @@ describe("ERC1155Edition", () => {
       });
 
       it("should revert when try to call from not edition owner", async () => {
-        await truffleAssert.reverts(nft.disableEdit(editionId, { from: SECOND }), "ERC1155Edition: not edititon owner");
+        await truffleAssert.reverts(
+          nft.disableEdit(editionId, { from: SECOND }),
+          "EditionContract: not edititon owner"
+        );
       });
     });
 
@@ -205,14 +208,14 @@ describe("ERC1155Edition", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.editEdition(editionId, newInfo, { from: SECOND }),
-          "ERC1155Edition: not edititon owner"
+          "EditionContract: not edititon owner"
         );
       });
 
       it("should revert when edit disabled", async () => {
         await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
         await nft.disableEdit(editionId);
-        await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "ERC1155Edition: edit disabled");
+        await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "EditionContract: edit disabled");
       });
     });
 
@@ -232,20 +235,23 @@ describe("ERC1155Edition", () => {
         await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
         await nft.disableEdit(editionId);
 
-        await truffleAssert.reverts(nft.resetRoyalty(editionId, SECOND, newNumerator), "ERC1155Edition: edit disabled");
+        await truffleAssert.reverts(
+          nft.resetRoyalty(editionId, SECOND, newNumerator),
+          "EditionContract: edit disabled"
+        );
       });
 
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.resetRoyalty(editionId, SECOND, newNumerator, { from: SECOND }),
-          "ERC1155Edition: not edititon owner"
+          "EditionContract: not edititon owner"
         );
       });
     });
 
     describe("supportsInterface()", () => {
       it("should pass supportsInterface", async () => {
-        let ierc1155Edition = await IERC1155Edition.at(nft.address);
+        let ierc1155Edition = await IEditionContract.at(nft.address);
         let ierc2981 = await IERC2981.at(nft.address);
         let ierc1155 = await IERC1155Upgradeable.at(nft.address);
         let ierc165 = await IERC165Upgradeable.at(nft.address);

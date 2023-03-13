@@ -6,17 +6,17 @@ import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol"
 import "./ERC1155Permit.sol";
 import "../proxy/UUPSOwnable.sol";
 
-import "../interfaces/tokens/IERC1155Edition.sol";
+import "../interfaces/tokens/IEditionContract.sol";
 
-contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1155Edition {
+contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEditionContract {
     mapping(uint256 => Edition) public editions;
 
     modifier onlyEditionOwner(uint256 editionId_) {
-        require(_msgSender() == editions[editionId_].owner, "ERC1155Edition: not edititon owner");
+        require(_msgSender() == editions[editionId_].owner, "EditionContract: not edititon owner");
         _;
     }
 
-    function __ERC1155Edition_init(string calldata uri_) external initializer {
+    function __EditionContract_init(string calldata uri_) external initializer {
         __UUPSOwnable_init();
         __ERC1155PermitUpgradeable_init(uri_);
         __ERC2981_init();
@@ -27,34 +27,42 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
     )
         public
         view
-        override(IERC1155Edition, IERC165Upgradeable, ERC2981Upgradeable)
+        override(IEditionContract, IERC165Upgradeable, ERC2981Upgradeable)
         returns (bool)
     {
         return
             ERC1155Upgradeable.supportsInterface(interfaceId_) ||
             ERC2981Upgradeable.supportsInterface(interfaceId_) ||
-            interfaceId_ == type(IERC1155Edition).interfaceId;
+            interfaceId_ == type(IEditionContract).interfaceId;
     }
 
     function uri(uint256 id_) public view override returns (string memory) {
         return editions[id_].info.uri;
     }
 
+    function ownerOf(uint256 id_) external view override returns (address) {
+        return editions[id_].owner;
+    }
+
     function createEdition(
         uint256 id_,
-        Edition memory edition_,
+        EditionInfo memory editionInfo_,
+        address tokenReceiver,
         uint256 toMintAmount_,
+        address feeReceiver_,
         uint96 feeNumerator_
     ) external override onlyOwner {
-        require(editions[id_].owner == address(0), "ERC1155Edition: edition already exists");
+        require(editions[id_].owner == address(0), "EditionContract: edition already exists");
 
-        edition_.owner = _msgSender();
-        edition_.createdAt = uint128(block.timestamp);
+        editions[id_] = Edition({
+            owner: _msgSender(),
+            createdAt: uint128(block.timestamp),
+            isEditEnabled: true,
+            info: editionInfo_
+        });
 
-        editions[id_] = edition_;
-
-        _mint(_msgSender(), id_, toMintAmount_, "");
-        _setTokenRoyalty(id_, _msgSender(), feeNumerator_);
+        _mint(tokenReceiver, id_, toMintAmount_, "");
+        _setTokenRoyalty(id_, feeReceiver_, feeNumerator_);
     }
 
     function disableEdit(uint256 id_) external override onlyEditionOwner(id_) {
@@ -65,7 +73,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         uint256 id_,
         EditionInfo calldata info_
     ) external override onlyEditionOwner(id_) {
-        require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
+        require(editions[id_].isEditEnabled, "EditionContract: edit disabled");
         editions[id_].info = info_;
     }
 
@@ -74,7 +82,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         address receiver_,
         uint96 feeNumerator_
     ) external override onlyEditionOwner(id_) {
-        require(editions[id_].isEditEnabled, "ERC1155Edition: edit disabled");
+        require(editions[id_].isEditEnabled, "EditionContract: edit disabled");
         _resetTokenRoyalty(id_);
         _setTokenRoyalty(id_, receiver_, feeNumerator_);
     }
@@ -83,7 +91,7 @@ contract ERC1155Edition is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IERC1
         uint256 id_,
         address to_
     ) public override onlyEditionOwner(id_) {
-        require(to_ != address(0), "ERC1155Edition: zero address");
+        require(to_ != address(0), "EditionContract: zero address");
         editions[id_].owner = to_;
     }
 
