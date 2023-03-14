@@ -47,7 +47,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
     function createEdition(
         uint256 id_,
         EditionInfo memory editionInfo_,
-        address tokenReceiver,
+        address tokenReceiver_,
         uint256 toMintAmount_,
         address feeReceiver_,
         uint96 feeNumerator_
@@ -63,7 +63,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
 
         emit EditionCreated(id_, _msgSender());
 
-        _mint(tokenReceiver, id_, toMintAmount_, "");
+        _mint(tokenReceiver_, id_, toMintAmount_, "");
         _setTokenRoyalty(id_, feeReceiver_, feeNumerator_);
     }
 
