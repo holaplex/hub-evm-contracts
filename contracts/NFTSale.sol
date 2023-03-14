@@ -44,6 +44,8 @@ contract NFTSale is INFTSale {
             msg.sender == offers[tokenId_][saleId_].saler
         ) {
             offers[tokenId_][saleId_].isClosed = true;
+
+            emit SaleDeleted(tokenId_, saleId_);
         }
     }
 
@@ -89,6 +91,8 @@ contract NFTSale is INFTSale {
         if (msg.value > offerPrice_) {
             _sendNative(msg.sender, msg.value - offerPrice_);
         }
+
+        emit Bought(tokenId_, saleId_, amount_, msg.sender);
     }
 
     function _createSale(
@@ -113,6 +117,8 @@ contract NFTSale is INFTSale {
                 priceForToken: price_
             })
         );
+
+        emit SaleCreated(id_, _tokenOffers.length - 1, saler_);
 
         return _tokenOffers.length - 1;
     }

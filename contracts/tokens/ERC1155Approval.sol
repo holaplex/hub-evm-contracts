@@ -64,6 +64,8 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
         require(owner_ != spender_, "ERC1155Approval: spender must not be owner");
 
         _allowances[keccak256(abi.encode(owner_, spender_, id_))] = amount_;
+
+        emit Approval(owner_, spender_, id_, amount_);
     }
 
     function _spendAllowance(

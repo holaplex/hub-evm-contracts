@@ -22,6 +22,11 @@ interface IEditionContract is IERC2981Upgradeable, IERC1155Permit, IUUPSOwnable 
         EditionInfo info;
     }
 
+    event EditionCreated(uint256 id, address owner);
+    event EditDisabled(uint256 id);
+    event EditionOwnershipTransfered(uint256, address to);
+    event RoyaltyChanged(uint256 id, address receiver, uint96 feeNumerator);
+
     function __EditionContract_init(string calldata uri_) external;
 
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);

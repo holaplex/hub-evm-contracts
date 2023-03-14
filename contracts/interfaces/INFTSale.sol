@@ -10,6 +10,10 @@ interface INFTSale {
         uint256 priceForToken;
     }
 
+    event SaleCreated(uint256 tokenId, uint256 saleId, address saler);
+    event SaleDeleted(uint256 tokenId, uint256 saleId);
+    event Bought(uint256 tokenId, uint256 saleId, uint256 amount, address buyer);
+
     function createSale(uint256 id_, uint256 amount_, uint256 price_) external returns (uint256);
 
     function createSalePermit(

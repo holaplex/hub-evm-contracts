@@ -61,12 +61,16 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
             info: editionInfo_
         });
 
+        emit EditionCreated(id_, _msgSender());
+
         _mint(tokenReceiver, id_, toMintAmount_, "");
         _setTokenRoyalty(id_, feeReceiver_, feeNumerator_);
     }
 
     function disableEdit(uint256 id_) external override onlyEditionOwner(id_) {
         editions[id_].isEditEnabled = false;
+
+        emit EditDisabled(id_);
     }
 
     function editEdition(
@@ -93,6 +97,8 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
     ) public override onlyEditionOwner(id_) {
         require(to_ != address(0), "EditionContract: zero address");
         editions[id_].owner = to_;
+
+        emit EditionOwnershipTransfered(id_, to_);
     }
 
     function mint(
