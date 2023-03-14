@@ -3,18 +3,14 @@ const Reverter = require("../helpers/reverter");
 const truffleAssert = require("truffle-assertions");
 const { assert } = require("chai");
 const { artifacts, web3 } = require("hardhat");
-const { getInterfaceId } = require("../../scripts/utils/interfaceId");
 
 const EditionContract = artifacts.require("EditionContract");
-const IEditionContract = artifacts.require("IEditionContract");
-const IERC2981 = artifacts.require("IERC2981Upgradeable");
-const IERC1155Upgradeable = artifacts.require("IERC1155Upgradeable");
-const IERC165Upgradeable = artifacts.require("IERC165Upgradeable");
 const BaseProxy = artifacts.require("BaseProxy");
+
+const InterfaceId = artifacts.require("InterfaceId");
 
 EditionContract.numberFormat = "BigInt";
 BaseProxy.numberFormat = "BigInt";
-IEditionContract.numberFormat = "BigInt";
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
@@ -59,16 +55,11 @@ describe("EditionContract", () => {
     const amount = 15;
     const editionId = 123;
     const editionInfo = {
-      owner: "0x76e98f7d84603AEb97cd1c89A80A9e914f181679",
-      createdAt: 0,
-      isEditEnabled: true,
-      info: {
-        description: "description",
-        imageUri: "/uri/1",
-        collection: "Collection",
-        uri: "placeholder://",
-        creator: "0x76e98f7d84603AEb97cd1c89A80A9e914f181679",
-      },
+      description: "description",
+      imageUri: "/uri/1",
+      collection: "Collection",
+      uri: "placeholder://",
+      creator: "0x76e98f7d84603AEb97cd1c89A80A9e914f181679",
     };
 
     beforeEach("init and mint", async () => {
@@ -77,21 +68,22 @@ describe("EditionContract", () => {
 
     describe("createEdition()", () => {
       it("should create a new edition with the correct metadata", async () => {
-        let tx = await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        let tx = await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
 
         let editionInfoContract = await nft.editions(editionId);
         let info = await nft.royaltyInfo(editionId, 1);
 
         assert.equal(info[0], OWNER);
 
-        assert.equal(editionInfoContract.info.description, editionInfo.info.description);
-        assert.equal(editionInfoContract.info.imageUri, editionInfo.info.imageUri);
-        assert.equal(editionInfoContract.info.collection, editionInfo.info.collection);
-        assert.equal(editionInfoContract.info.uri, editionInfo.info.uri);
+        assert.equal(editionInfoContract.info.description, editionInfo.description);
+        assert.equal(editionInfoContract.info.imageUri, editionInfo.imageUri);
+        assert.equal(editionInfoContract.info.collection, editionInfo.collection);
+        assert.equal(editionInfoContract.info.uri, editionInfo.uri);
+        assert.equal(editionInfoContract.info.creator, editionInfo.creator);
 
-        assert.equal(editionInfoContract.creator, editionInfo.creator);
         assert.equal(editionInfoContract.owner, OWNER);
-        assert.equal(editionInfoContract.isEditEnabled, editionInfo.isEditEnabled);
+        assert.equal(await nft.ownerOf(editionId), OWNER);
+        assert.equal(editionInfoContract.isEditEnabled, true);
         assert.equal(editionInfoContract.createdAt, (await web3.eth.getBlock(tx.receipt.blockHash)).timestamp);
 
         assert.equal(await nft.balanceOf(OWNER, editionId), amount);
@@ -99,16 +91,16 @@ describe("EditionContract", () => {
 
       it("should revert when caller is not owner", async () => {
         await truffleAssert.reverts(
-          nft.createEdition(editionId, editionInfo, amount, feeNumerator, { from: SECOND }),
+          nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator, { from: SECOND }),
           "Ownable: caller is not the owner"
         );
       });
 
       it("should revert when edition already exists", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
 
         await truffleAssert.reverts(
-          nft.createEdition(editionId, editionInfo, amount, feeNumerator),
+          nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator),
           "EditionContract: edition already exists"
         );
       });
@@ -116,7 +108,7 @@ describe("EditionContract", () => {
 
     describe("transferEditionOwnership()", () => {
       beforeEach("create edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
       });
 
       it("should move transfer edition ownership", async () => {
@@ -139,7 +131,7 @@ describe("EditionContract", () => {
 
     describe("mint()", () => {
       beforeEach("create edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
       });
 
       it("should mint 100 tokens", async () => {
@@ -158,15 +150,15 @@ describe("EditionContract", () => {
 
     describe("uri()", () => {
       it("should correctly return token uri", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
 
-        assert.equal(editionInfo.info.uri, await nft.uri(editionId));
+        assert.equal(editionInfo.uri, await nft.uri(editionId));
       });
     });
 
     describe("disableEdit()", () => {
       beforeEach(async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
       });
 
       it("should disable edit", async () => {
@@ -193,7 +185,7 @@ describe("EditionContract", () => {
       };
 
       it("should correctly edit edition", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
 
         await nft.editEdition(editionId, newInfo);
 
@@ -213,7 +205,7 @@ describe("EditionContract", () => {
       });
 
       it("should revert when edit disabled", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
         await nft.disableEdit(editionId);
         await truffleAssert.reverts(nft.editEdition(editionId, newInfo), "EditionContract: edit disabled");
       });
@@ -223,7 +215,7 @@ describe("EditionContract", () => {
       const newNumerator = 10 ** 2;
 
       it("should set new royalty options", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
         await nft.resetRoyalty(editionId, SECOND, newNumerator);
 
         let info = await nft.royaltyInfo(editionId, newNumerator);
@@ -232,7 +224,7 @@ describe("EditionContract", () => {
       });
 
       it("should revert when edit disabled", async () => {
-        await nft.createEdition(editionId, editionInfo, amount, feeNumerator);
+        await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
         await nft.disableEdit(editionId);
 
         await truffleAssert.reverts(
@@ -251,15 +243,12 @@ describe("EditionContract", () => {
 
     describe("supportsInterface()", () => {
       it("should pass supportsInterface", async () => {
-        let ierc1155Edition = await IEditionContract.at(nft.address);
-        let ierc2981 = await IERC2981.at(nft.address);
-        let ierc1155 = await IERC1155Upgradeable.at(nft.address);
-        let ierc165 = await IERC165Upgradeable.at(nft.address);
+        let idGetter = await InterfaceId.new();
 
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155Edition, true)), true);
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc1155, false)), true);
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc2981, false)), true);
-        assert.equal(await nft.supportsInterface(getInterfaceId(ierc165, true)), true);
+        assert.equal(await nft.supportsInterface(await idGetter.getIEditionContract()), true);
+        assert.equal(await nft.supportsInterface(await idGetter.getIERC1155()), true);
+        assert.equal(await nft.supportsInterface(await idGetter.getIERC2981()), true);
+        assert.equal(await nft.supportsInterface(await idGetter.getIERC165()), true);
       });
     });
   });

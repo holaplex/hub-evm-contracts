@@ -11,11 +11,6 @@ contract NFTSale is INFTSale {
 
     mapping(uint256 => Offer[]) public offers;
 
-    modifier onlyEditionOwner(uint256 editionId_) {
-        require(msg.sender == editionContract.ownerOf(editionId_), "NFTSale: not edititon owner");
-        _;
-    }
-
     constructor(address editionContractAddress_) {
         editionContract = IEditionContract(editionContractAddress_);
     }
@@ -24,11 +19,7 @@ contract NFTSale is INFTSale {
         return interfaceId == type(INFTSale).interfaceId;
     }
 
-    function createSale(
-        uint256 id_,
-        uint256 amount_,
-        uint256 price_
-    ) external onlyEditionOwner(id_) returns (uint256) {
+    function createSale(uint256 id_, uint256 amount_, uint256 price_) external returns (uint256) {
         return _createSale(id_, amount_, price_, msg.sender);
     }
 
@@ -41,7 +32,7 @@ contract NFTSale is INFTSale {
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external onlyEditionOwner(id_) returns (uint256) {
+    ) external returns (uint256) {
         editionContract.permit(saler_, address(this), id_, amount_, deadline_, v_, r_, s_);
 
         return _createSale(id_, amount_, price_, saler_);
