@@ -12,7 +12,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
     mapping(uint256 => Edition) public editions;
 
     modifier onlyEditionOwner(uint256 editionId_) {
-        require(_msgSender() == editions[editionId_].owner, "EditionContract: not edititon owner");
+        require(_msgSender() == editions[editionId_].owner, "EditionContract: not edition owner");
         _;
     }
 
@@ -40,7 +40,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         return editions[id_].info.uri;
     }
 
-    function ownerOf(uint256 id_) external view override returns (address) {
+    function ownerOf(uint256 id_) external view returns (address) {
         return editions[id_].owner;
     }
 
@@ -51,7 +51,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         uint256 toMintAmount_,
         address feeReceiver_,
         uint96 feeNumerator_
-    ) external override onlyOwner {
+    ) external onlyOwner {
         require(editions[id_].owner == address(0), "EditionContract: edition already exists");
 
         editions[id_] = Edition({
@@ -67,16 +67,13 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         _setTokenRoyalty(id_, feeReceiver_, feeNumerator_);
     }
 
-    function disableEdit(uint256 id_) external override onlyEditionOwner(id_) {
+    function disableEdit(uint256 id_) external onlyEditionOwner(id_) {
         editions[id_].isEditEnabled = false;
 
         emit EditDisabled(id_);
     }
 
-    function editEdition(
-        uint256 id_,
-        EditionInfo calldata info_
-    ) external override onlyEditionOwner(id_) {
+    function editEdition(uint256 id_, EditionInfo calldata info_) external onlyEditionOwner(id_) {
         require(editions[id_].isEditEnabled, "EditionContract: edit disabled");
         editions[id_].info = info_;
     }
@@ -85,27 +82,20 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         uint256 id_,
         address receiver_,
         uint96 feeNumerator_
-    ) external override onlyEditionOwner(id_) {
+    ) external onlyEditionOwner(id_) {
         require(editions[id_].isEditEnabled, "EditionContract: edit disabled");
-        _resetTokenRoyalty(id_);
+
         _setTokenRoyalty(id_, receiver_, feeNumerator_);
     }
 
-    function transferEditionOwnership(
-        uint256 id_,
-        address to_
-    ) public override onlyEditionOwner(id_) {
+    function transferEditionOwnership(uint256 id_, address to_) public onlyEditionOwner(id_) {
         require(to_ != address(0), "EditionContract: zero address");
         editions[id_].owner = to_;
 
         emit EditionOwnershipTransfered(id_, to_);
     }
 
-    function mint(
-        address to_,
-        uint256 id_,
-        uint256 amount_
-    ) external override onlyEditionOwner(id_) {
+    function mint(address to_, uint256 id_, uint256 amount_) external onlyEditionOwner(id_) {
         _mint(to_, id_, amount_, "");
     }
 

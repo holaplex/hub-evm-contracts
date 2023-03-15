@@ -62,7 +62,7 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         uint8 v_,
         bytes32 r_,
         bytes32 s_
-    ) external override {
+    ) external {
         require(block.timestamp <= deadline_, "ERC1155Permit: expired deadline");
 
         bytes32 structHash = keccak256(
@@ -86,11 +86,11 @@ abstract contract ERC1155Permit is ERC1155Approval, EIP712Upgradeable, IERC1155P
         _approve(owner_, spender_, id_, value_);
     }
 
-    function nonces(address owner_) external view override returns (uint256) {
+    function nonces(address owner_) external view returns (uint256) {
         return _nonces[owner_].current();
     }
 
-    function DOMAIN_SEPARATOR() external view override returns (bytes32) {
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _domainSeparatorV4();
     }
 

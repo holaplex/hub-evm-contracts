@@ -13,16 +13,12 @@ contract ERC1155Approval is IERC1155Approval, ERC1155SupplyUpgradeable {
         __ERC1155_init(uri);
     }
 
-    function approve(address to_, uint256 id_, uint256 amount_) external override returns (bool) {
+    function approve(address to_, uint256 id_, uint256 amount_) external returns (bool) {
         _approve(_msgSender(), to_, id_, amount_);
         return true;
     }
 
-    function allowance(
-        address from_,
-        address to_,
-        uint256 id_
-    ) public view override returns (uint256) {
+    function allowance(address from_, address to_, uint256 id_) public view returns (uint256) {
         return _allowances[keccak256(abi.encode(from_, to_, id_))];
     }
 

@@ -3,15 +3,18 @@ pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 
+import "./proxy/UUPSOwnable.sol";
+
 import "./interfaces/INFTSale.sol";
 import "./interfaces/tokens/IEditionContract.sol";
 
-contract NFTSale is INFTSale {
+contract NFTSale is UUPSOwnable, INFTSale {
     IEditionContract public editionContract;
 
     mapping(uint256 => Offer[]) public offers;
 
-    constructor(address editionContractAddress_) {
+    function __NFTSale_init(address editionContractAddress_) external initializer {
+        __UUPSOwnable_init();
         editionContract = IEditionContract(editionContractAddress_);
     }
 
@@ -20,7 +23,7 @@ contract NFTSale is INFTSale {
     }
 
     function createSale(uint256 id_, uint256 amount_, uint256 price_) external returns (uint256) {
-        return _createSale(id_, amount_, price_, msg.sender);
+        return _createSale(id_, amount_, price_, _msgSender());
     }
 
     function createSalePermit(
@@ -41,7 +44,7 @@ contract NFTSale is INFTSale {
     function deleteSale(uint256 tokenId_, uint256 saleId_) external {
         if (
             offers[tokenId_][saleId_].currentAmount == 0 ||
-            msg.sender == offers[tokenId_][saleId_].saler
+            _msgSender() == offers[tokenId_][saleId_].saler
         ) {
             offers[tokenId_][saleId_].isClosed = true;
 
@@ -84,15 +87,15 @@ contract NFTSale is INFTSale {
         _sendNative(receiver_, fee_);
         _sendNative(offer.saler, offerPrice_ - fee_);
 
-        editionContract.safeTransferFrom(offer.saler, msg.sender, offer.tokenId, amount_, "");
+        editionContract.safeTransferFrom(offer.saler, _msgSender(), offer.tokenId, amount_, "");
 
         /// @dev push back eth
 
         if (msg.value > offerPrice_) {
-            _sendNative(msg.sender, msg.value - offerPrice_);
+            _sendNative(_msgSender(), msg.value - offerPrice_);
         }
 
-        emit Bought(tokenId_, saleId_, amount_, msg.sender);
+        emit Bought(tokenId_, saleId_, amount_, _msgSender());
     }
 
     function _createSale(
@@ -107,8 +110,8 @@ contract NFTSale is INFTSale {
         );
         require(editionContract.balanceOf(saler_, id_) >= amount_, "NFTSale: insufficient amount");
 
-        Offer[] storage _tokenOffers = offers[id_];
-        _tokenOffers.push(
+        Offer[] storage tokenOffers = offers[id_];
+        tokenOffers.push(
             Offer({
                 saler: saler_,
                 isClosed: false,
@@ -118,9 +121,9 @@ contract NFTSale is INFTSale {
             })
         );
 
-        emit SaleCreated(id_, _tokenOffers.length - 1, saler_);
+        emit SaleCreated(id_, tokenOffers.length - 1, saler_);
 
-        return _tokenOffers.length - 1;
+        return tokenOffers.length - 1;
     }
 
     function _sendNative(address to_, uint256 amount_) internal {

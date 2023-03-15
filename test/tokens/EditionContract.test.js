@@ -120,7 +120,7 @@ describe("EditionContract", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.transferEditionOwnership(editionId, SECOND, { from: SECOND }),
-          "EditionContract: not edititon owner"
+          "EditionContract: not edition owner"
         );
       });
 
@@ -143,7 +143,7 @@ describe("EditionContract", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.mint(SECOND, editionId, 100, { from: SECOND }),
-          "EditionContract: not edititon owner"
+          "EditionContract: not edition owner"
         );
       });
     });
@@ -168,10 +168,7 @@ describe("EditionContract", () => {
       });
 
       it("should revert when try to call from not edition owner", async () => {
-        await truffleAssert.reverts(
-          nft.disableEdit(editionId, { from: SECOND }),
-          "EditionContract: not edititon owner"
-        );
+        await truffleAssert.reverts(nft.disableEdit(editionId, { from: SECOND }), "EditionContract: not edition owner");
       });
     });
 
@@ -200,7 +197,7 @@ describe("EditionContract", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.editEdition(editionId, newInfo, { from: SECOND }),
-          "EditionContract: not edititon owner"
+          "EditionContract: not edition owner"
         );
       });
 
@@ -236,7 +233,7 @@ describe("EditionContract", () => {
       it("should revert when try to call from not edition owner", async () => {
         await truffleAssert.reverts(
           nft.resetRoyalty(editionId, SECOND, newNumerator, { from: SECOND }),
-          "EditionContract: not edititon owner"
+          "EditionContract: not edition owner"
         );
       });
     });
