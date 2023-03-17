@@ -56,6 +56,11 @@ module.exports = {
       accounts: privateKey(),
       gasMultiplier: 1.2,
     },
+    mumbai: {
+      url: ` https://rpc-mumbai.maticvigil.com/`,
+      accounts: privateKey(),
+      gasMultiplier: 1.2,
+    },
   },
   solidity: {
     version: "0.8.9",
@@ -72,6 +77,8 @@ module.exports = {
       goerli: `${process.env.ETHERSCAN_KEY}`,
       bsc: `${process.env.BSCSCAN_KEY}`,
       bscTestnet: `${process.env.BSCSCAN_KEY}`,
+      polygon: `${process.env.POLYGONSCAN_KEY}`,
+      polygonMumbai: `${process.env.POLYGONSCAN_KEY}`,
     },
   },
   migrate: {
