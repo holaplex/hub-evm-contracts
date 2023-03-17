@@ -46,7 +46,7 @@ interface IEditionContract is IERC2981Upgradeable, IERC1155Permit, IUUPSOwnable 
      * @notice the function for initialize contract
      * @param uri_ the uri string
      */
-    function __EditionContract_init(string calldata uri_) external;
+    function editionContractInit(string calldata uri_) external;
 
     /// @inheritdoc IERC165Upgradeable
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);

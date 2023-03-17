@@ -38,15 +38,12 @@ describe("EditionContract", () => {
 
   describe("init", () => {
     it("should init", async () => {
-      await truffleAssert.passes(nft.__EditionContract_init("http://"));
+      await truffleAssert.passes(nft.editionContractInit("http://"));
     });
 
     it("should not initialize twice", async () => {
-      await nft.__EditionContract_init("http://");
-      await truffleAssert.reverts(
-        nft.__EditionContract_init("http://"),
-        "Initializable: contract is already initialized"
-      );
+      await nft.editionContractInit("http://");
+      await truffleAssert.reverts(nft.editionContractInit("http://"), "Initializable: contract is already initialized");
     });
   });
 
@@ -63,7 +60,7 @@ describe("EditionContract", () => {
     };
 
     beforeEach("init and mint", async () => {
-      await nft.__EditionContract_init("http://");
+      await nft.editionContractInit("http://");
     });
 
     describe("createEdition()", () => {

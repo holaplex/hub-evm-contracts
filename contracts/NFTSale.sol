@@ -13,7 +13,7 @@ contract NFTSale is UUPSOwnable, INFTSale {
 
     mapping(uint256 => Offer[]) public offers;
 
-    function __NFTSale_init(address editionContractAddress_) external initializer {
+    function NFTSaleInit(address editionContractAddress_) external initializer {
         __UUPSOwnable_init();
         editionContract = IEditionContract(editionContractAddress_);
     }

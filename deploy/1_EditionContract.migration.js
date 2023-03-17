@@ -9,7 +9,7 @@ module.exports = async (deployer) => {
   const editionContract = await deployer.deploy(EditionContract);
   await deployer.deploy(
     BaseProxy,
-    encodeCall(web3, editionContract, "__EditionContract_init", [URI]),
+    encodeCall(web3, editionContract, "editionContractInit", [URI]),
     editionContract.address
   );
 };

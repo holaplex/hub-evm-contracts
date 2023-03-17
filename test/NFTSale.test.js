@@ -39,7 +39,7 @@ describe("NFTSale", () => {
     let proxy = await BaseProxy.new("0x", _erc1155Edition.address);
     nft = await EditionContract.at(proxy.address);
 
-    await nft.__EditionContract_init("http://");
+    await nft.editionContractInit("http://");
 
     let _nftSale = await NFTSale.new();
     proxy = await BaseProxy.new("0x", _nftSale.address);
@@ -54,15 +54,12 @@ describe("NFTSale", () => {
 
   describe("init", () => {
     it("should init", async () => {
-      await truffleAssert.passes(nftSale.__NFTSale_init(nft.address));
+      await truffleAssert.passes(nftSale.NFTSaleInit(nft.address));
     });
 
     it("should not initialize twice", async () => {
-      await nftSale.__NFTSale_init(nft.address);
-      await truffleAssert.reverts(
-        nftSale.__NFTSale_init(nft.address),
-        "Initializable: contract is already initialized"
-      );
+      await nftSale.NFTSaleInit(nft.address);
+      await truffleAssert.reverts(nftSale.NFTSaleInit(nft.address), "Initializable: contract is already initialized");
     });
   });
 
@@ -84,7 +81,7 @@ describe("NFTSale", () => {
     beforeEach("init", async () => {
       await nft.createEdition(editionId, editionInfo, OWNER, amountToMint, FEE_RECEIVER, feeNumerator);
 
-      await nftSale.__NFTSale_init(nft.address);
+      await nftSale.NFTSaleInit(nft.address);
     });
 
     describe("createSale", () => {

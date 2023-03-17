@@ -8,7 +8,7 @@ const { encodeCall } = require("../scripts/utils/callEncoder");
 module.exports = async (deployer, logger) => {
   const editionContract = await EditionContract.at((await BaseProxy.deployed()).address);
   const sale = await deployer.deploy(NFTSale);
-  await deployer.deploy(BaseProxy, encodeCall(web3, sale, "__NFTSale_init", [editionContract.address]), sale.address);
+  await deployer.deploy(BaseProxy, encodeCall(web3, sale, "NFTSaleInit", [editionContract.address]), sale.address);
 
   logger.logContracts(["EditionContract", editionContract.address], ["NFTSale", contract.address]);
 };

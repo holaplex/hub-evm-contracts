@@ -16,7 +16,7 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         _;
     }
 
-    function __EditionContract_init(string calldata uri_) external initializer {
+    function editionContractInit(string calldata uri_) external initializer {
         __UUPSOwnable_init();
         __ERC1155PermitUpgradeable_init(uri_);
         __ERC2981_init();
