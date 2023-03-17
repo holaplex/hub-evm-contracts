@@ -1,12 +1,15 @@
 const EditionContract = artifacts.require("EditionContract");
 const BaseProxy = artifacts.require("BaseProxy");
 
+const { encodeCall } = require("../scripts/utils/callEncoder");
+
 const URI = "";
 
 module.exports = async (deployer) => {
   const editionContract = await deployer.deploy(EditionContract);
-  const proxyAddress = (await deployer.deploy(BaseProxy, "0x", editionContract.address)).address;
-  const contract = await EditionContract.at(proxyAddress);
-
-  await contract.__EditionContract_init(URI);
+  await deployer.deploy(
+    BaseProxy,
+    encodeCall(web3, editionContract, "__EditionContract_init", [URI]),
+    editionContract.address
+  );
 };

@@ -2,13 +2,13 @@ const NFTSale = artifacts.require("NFTSale");
 const EditionContract = artifacts.require("EditionContract");
 const BaseProxy = artifacts.require("BaseProxy");
 
+const { web3 } = require("hardhat");
+const { encodeCall } = require("../scripts/utils/callEncoder");
+
 module.exports = async (deployer, logger) => {
   const editionContract = await EditionContract.at((await BaseProxy.deployed()).address);
   const sale = await deployer.deploy(NFTSale);
-  const proxyAddress = (await deployer.deploy(BaseProxy, "0x", sale.address)).address;
-  const contract = await NFTSale.at(proxyAddress);
-
-  await contract.__NFTSale_init(editionContract.address);
+  await deployer.deploy(BaseProxy, encodeCall(web3, sale, "__NFTSale_init", [editionContract.address]), sale.address);
 
   logger.logContracts(["EditionContract", editionContract.address], ["NFTSale", contract.address]);
 };
