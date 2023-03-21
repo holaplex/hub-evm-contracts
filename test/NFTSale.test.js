@@ -92,7 +92,7 @@ describe("NFTSale", () => {
         await nft.approve(nftSale.address, editionId, amountToMint);
 
         await nftSale.createSale(editionId, currentAmount, priceForToken);
-        let offerInStorage = await nftSale.offers(editionId, 0);
+        let offerInStorage = await nftSale.listings(editionId, 0);
 
         assert.equal(offerInStorage.saler, OWNER);
         assert.equal(offerInStorage.isClosed, false);
@@ -107,7 +107,7 @@ describe("NFTSale", () => {
         await nft.approve(nftSale.address, editionId, currentAmount, { from: SECOND });
 
         await nftSale.createSale(editionId, currentAmount, priceForToken, { from: SECOND });
-        let offerInStorage = await nftSale.offers(editionId, 0);
+        let offerInStorage = await nftSale.listings(editionId, 0);
 
         assert.equal(offerInStorage.saler, SECOND);
         assert.equal(offerInStorage.isClosed, false);
@@ -155,7 +155,7 @@ describe("NFTSale", () => {
 
         await nftSale.createSalePermit(editionId, currentAmount, priceForToken, OWNER, deadline, v, r, s);
 
-        let offerInStorage = await nftSale.offers(editionId, 0);
+        let offerInStorage = await nftSale.listings(editionId, 0);
 
         assert.equal(offerInStorage.saler, OWNER);
         assert.equal(offerInStorage.isClosed, false);
@@ -173,7 +173,7 @@ describe("NFTSale", () => {
 
         await nftSale.deleteSale(editionId, 0);
 
-        assert.equal((await nftSale.offers(editionId, 0)).isClosed, true);
+        assert.equal((await nftSale.listings(editionId, 0)).isClosed, true);
       });
 
       it("should delete when offer amount = 0", async () => {
@@ -181,7 +181,7 @@ describe("NFTSale", () => {
 
         await nftSale.deleteSale(editionId, 0, { from: SECOND });
 
-        assert.equal((await nftSale.offers(editionId, 0)).isClosed, true);
+        assert.equal((await nftSale.listings(editionId, 0)).isClosed, true);
       });
 
       it("should pass, but not delete", async () => {
@@ -191,7 +191,7 @@ describe("NFTSale", () => {
 
         await nftSale.deleteSale(editionId, 0, { from: SECOND });
 
-        assert.equal((await nftSale.offers(editionId, 0)).isClosed, false);
+        assert.equal((await nftSale.listings(editionId, 0)).isClosed, false);
       });
     });
 
@@ -237,7 +237,7 @@ describe("NFTSale", () => {
       it("should close sale", async () => {
         await nftSale.buy(editionId, saleId, currentAmount, { from: SECOND, value: wei(currentAmount * 2) });
 
-        assert.equal((await nftSale.offers(editionId, saleId)).isClosed, true);
+        assert.equal((await nftSale.listings(editionId, saleId)).isClosed, true);
       });
 
       it("should spend all eth", async () => {
