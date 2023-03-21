@@ -94,7 +94,7 @@ describe("NFTSale", () => {
         await nftSale.createSale(editionId, currentAmount, priceForToken);
         let offerInStorage = await nftSale.offers(editionId, 0);
 
-        assert.equal(offerInStorage.saler, OWNER);
+        assert.equal(offerInStorage.seller, OWNER);
         assert.equal(offerInStorage.isClosed, false);
         assert.equal(offerInStorage.tokenId, editionId);
         assert.equal(offerInStorage.currentAmount, currentAmount);
@@ -109,7 +109,7 @@ describe("NFTSale", () => {
         await nftSale.createSale(editionId, currentAmount, priceForToken, { from: SECOND });
         let offerInStorage = await nftSale.offers(editionId, 0);
 
-        assert.equal(offerInStorage.saler, SECOND);
+        assert.equal(offerInStorage.seller, SECOND);
         assert.equal(offerInStorage.isClosed, false);
         assert.equal(offerInStorage.tokenId, editionId);
         assert.equal(offerInStorage.currentAmount, currentAmount);
@@ -157,7 +157,7 @@ describe("NFTSale", () => {
 
         let offerInStorage = await nftSale.offers(editionId, 0);
 
-        assert.equal(offerInStorage.saler, OWNER);
+        assert.equal(offerInStorage.seller, OWNER);
         assert.equal(offerInStorage.isClosed, false);
         assert.equal(offerInStorage.tokenId, editionId);
         assert.equal(offerInStorage.currentAmount, currentAmount);
@@ -282,12 +282,12 @@ describe("NFTSale", () => {
         );
       });
 
-      it("should revert when saler out of tokens", async () => {
+      it("should revert when seller out of tokens", async () => {
         await nft.safeTransferFrom(OWNER, THIRD, editionId, amountToMint, "0x");
 
         await truffleAssert.reverts(
           nftSale.buy(editionId, saleId, currentAmount, { from: SECOND, value: wei("20") }),
-          "NFTSale: saler out of balance"
+          "NFTSale: seller out of balance"
         );
       });
 
@@ -296,7 +296,7 @@ describe("NFTSale", () => {
 
         await truffleAssert.reverts(
           nftSale.buy(editionId, saleId, currentAmount, { from: SECOND, value: wei("20") }),
-          "NFTSale: insufficient saler's allowance"
+          "NFTSale: insufficient seller's allowance"
         );
       });
 
