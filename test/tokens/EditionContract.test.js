@@ -56,7 +56,7 @@ describe("EditionContract", () => {
       imageUri: "/uri/1",
       collection: "Collection",
       uri: "placeholder://",
-      creator: "0x76e98f7d84603AEb97cd1c89A80A9e914f181679",
+      creator: "0x70997970C51812dc3A010C7d01b50e0d17dc79C8",
     };
 
     beforeEach("init and mint", async () => {
@@ -65,12 +65,12 @@ describe("EditionContract", () => {
 
     describe("createEdition()", () => {
       it("should create a new edition with the correct metadata", async () => {
-        let tx = await nft.createEdition(editionId, editionInfo, OWNER, amount, OWNER, feeNumerator);
+        let tx = await nft.createEdition(editionId, editionInfo, SECOND, amount, SECOND, feeNumerator);
 
         let editionInfoContract = await nft.editions(editionId);
         let info = await nft.royaltyInfo(editionId, 1);
 
-        assert.equal(info[0], OWNER);
+        assert.equal(info[0], SECOND);
 
         assert.equal(editionInfoContract.info.description, editionInfo.description);
         assert.equal(editionInfoContract.info.imageUri, editionInfo.imageUri);
@@ -78,12 +78,12 @@ describe("EditionContract", () => {
         assert.equal(editionInfoContract.info.uri, editionInfo.uri);
         assert.equal(editionInfoContract.info.creator, editionInfo.creator);
 
-        assert.equal(editionInfoContract.owner, OWNER);
-        assert.equal(await nft.ownerOf(editionId), OWNER);
+        assert.equal(editionInfoContract.owner, SECOND);
+        assert.equal(await nft.ownerOf(editionId), SECOND);
         assert.equal(editionInfoContract.isEditEnabled, true);
         assert.equal(editionInfoContract.createdAt, (await web3.eth.getBlock(tx.receipt.blockHash)).timestamp);
 
-        assert.equal(await nft.balanceOf(OWNER, editionId), amount);
+        assert.equal(await nft.balanceOf(SECOND, editionId), amount);
       });
 
       it("should revert when caller is not owner", async () => {

@@ -55,13 +55,13 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         require(editions[id_].owner == address(0), "EditionContract: edition already exists");
 
         editions[id_] = Edition({
-            owner: _msgSender(),
+            owner: tokenReceiver_,
             createdAt: uint128(block.timestamp),
             isEditEnabled: true,
             info: editionInfo_
         });
 
-        emit EditionCreated(id_, _msgSender());
+        emit EditionCreated(id_, tokenReceiver_);
 
         _mint(tokenReceiver_, id_, toMintAmount_, "");
         _setTokenRoyalty(id_, feeReceiver_, feeNumerator_);
