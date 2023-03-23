@@ -4,21 +4,21 @@ pragma solidity ^0.8.9;
 interface INFTSale {
     /**
      * @notice The struct holds information about sale offer
-     * @param saler the address of saler
+     * @param seller the address of seller
      * @param isCloset the bool flag, if true - sale is closed
      * @param tokenId the id of edition
      * @param currentAmount the current amount to sale
      * @param priceForToken the price in wei of one token
      */
     struct Offer {
-        address saler;
+        address seller;
         bool isClosed;
         uint256 tokenId;
         uint256 currentAmount;
         uint256 priceForToken;
     }
 
-    event SaleCreated(uint256 tokenId, uint256 saleId, address saler);
+    event SaleCreated(uint256 tokenId, uint256 saleId, address seller);
     event SaleDeleted(uint256 tokenId, uint256 saleId);
     event Bought(uint256 tokenId, uint256 saleId, uint256 amount, address buyer);
 
@@ -36,7 +36,7 @@ interface INFTSale {
      * @param id_ the id of edition
      * @param amount_ the amount of sales tokens
      * @param price_ the price of one token
-     * @param saler_ the address of saler
+     * @param seller_ the address of seller
      * @param deadline_ the timestamp up to which permit can be used
      * @param v_ the part of owner's signature
      * @param r_ the part of owner's signature
@@ -47,7 +47,7 @@ interface INFTSale {
         uint256 id_,
         uint256 amount_,
         uint256 price_,
-        address saler_,
+        address seller_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,

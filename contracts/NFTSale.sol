@@ -30,21 +30,21 @@ contract NFTSale is UUPSOwnable, INFTSale {
         uint256 id_,
         uint256 amount_,
         uint256 price_,
-        address saler_,
+        address seller_,
         uint256 deadline_,
         uint8 v_,
         bytes32 r_,
         bytes32 s_
     ) external returns (uint256) {
-        editionContract.permit(saler_, address(this), id_, amount_, deadline_, v_, r_, s_);
+        editionContract.permit(seller_, address(this), id_, amount_, deadline_, v_, r_, s_);
 
-        return _createSale(id_, amount_, price_, saler_);
+        return _createSale(id_, amount_, price_, seller_);
     }
 
     function deleteSale(uint256 tokenId_, uint256 saleId_) external {
         if (
             offers[tokenId_][saleId_].currentAmount == 0 ||
-            _msgSender() == offers[tokenId_][saleId_].saler
+            _msgSender() == offers[tokenId_][saleId_].seller
         ) {
             offers[tokenId_][saleId_].isClosed = true;
 
@@ -57,12 +57,12 @@ contract NFTSale is UUPSOwnable, INFTSale {
         require(!offer.isClosed, "NFTSale: sales closed");
 
         require(
-            editionContract.balanceOf(offer.saler, tokenId_) >= amount_,
-            "NFTSale: saler out of balance"
+            editionContract.balanceOf(offer.seller, tokenId_) >= amount_,
+            "NFTSale: seller out of balance"
         );
         require(
-            editionContract.allowance(offer.saler, address(this), tokenId_) >= amount_,
-            "NFTSale: insufficient saler's allowance"
+            editionContract.allowance(offer.seller, address(this), tokenId_) >= amount_,
+            "NFTSale: insufficient seller's allowance"
         );
 
         uint256 offerPrice_ = amount_ * offer.priceForToken;
@@ -85,9 +85,9 @@ contract NFTSale is UUPSOwnable, INFTSale {
         }
 
         _sendNative(receiver_, fee_);
-        _sendNative(offer.saler, offerPrice_ - fee_);
+        _sendNative(offer.seller, offerPrice_ - fee_);
 
-        editionContract.safeTransferFrom(offer.saler, _msgSender(), offer.tokenId, amount_, "");
+        editionContract.safeTransferFrom(offer.seller, _msgSender(), offer.tokenId, amount_, "");
 
         /// @dev push back eth
 
@@ -102,18 +102,21 @@ contract NFTSale is UUPSOwnable, INFTSale {
         uint256 id_,
         uint256 amount_,
         uint256 price_,
-        address saler_
+        address seller_
     ) internal returns (uint256) {
         require(
-            editionContract.allowance(saler_, address(this), id_) >= amount_,
+            editionContract.allowance(seller_, address(this), id_) >= amount_,
             "NFTSale: insufficient allowance"
         );
-        require(editionContract.balanceOf(saler_, id_) >= amount_, "NFTSale: insufficient amount");
+        require(
+            editionContract.balanceOf(seller_, id_) >= amount_,
+            "NFTSale: insufficient amount"
+        );
 
         Offer[] storage tokenOffers = offers[id_];
         tokenOffers.push(
             Offer({
-                saler: saler_,
+                seller: seller_,
                 isClosed: false,
                 tokenId: id_,
                 currentAmount: amount_,
@@ -121,7 +124,7 @@ contract NFTSale is UUPSOwnable, INFTSale {
             })
         );
 
-        emit SaleCreated(id_, tokenOffers.length - 1, saler_);
+        emit SaleCreated(id_, tokenOffers.length - 1, seller_);
 
         return tokenOffers.length - 1;
     }
