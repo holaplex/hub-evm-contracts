@@ -11,7 +11,7 @@ import "./interfaces/tokens/IEditionContract.sol";
 contract NFTSale is UUPSOwnable, INFTSale {
     IEditionContract public editionContract;
 
-    mapping(uint256 => Offer[]) public offers;
+    mapping(uint256 => Listing[]) public listings;
 
     function NFTSaleInit(address editionContractAddress_) external initializer {
         __UUPSOwnable_init();
@@ -43,51 +43,57 @@ contract NFTSale is UUPSOwnable, INFTSale {
 
     function deleteSale(uint256 tokenId_, uint256 saleId_) external {
         if (
-            offers[tokenId_][saleId_].currentAmount == 0 ||
-            _msgSender() == offers[tokenId_][saleId_].seller
+            listings[tokenId_][saleId_].currentAmount == 0 ||
+            _msgSender() == listings[tokenId_][saleId_].seller
         ) {
-            offers[tokenId_][saleId_].isClosed = true;
+            listings[tokenId_][saleId_].isClosed = true;
 
             emit SaleDeleted(tokenId_, saleId_);
         }
     }
 
     function buy(uint256 tokenId_, uint256 saleId_, uint256 amount_) external payable {
-        Offer storage offer = offers[tokenId_][saleId_];
-        require(!offer.isClosed, "NFTSale: sales closed");
+        Listing storage listing = listings[tokenId_][saleId_];
+        require(!listing.isClosed, "NFTSale: sales closed");
 
         require(
-            editionContract.balanceOf(offer.seller, tokenId_) >= amount_,
+            editionContract.balanceOf(listing.seller, tokenId_) >= amount_,
             "NFTSale: seller out of balance"
         );
         require(
-            editionContract.allowance(offer.seller, address(this), tokenId_) >= amount_,
+            editionContract.allowance(listing.seller, address(this), tokenId_) >= amount_,
             "NFTSale: insufficient seller's allowance"
         );
 
-        uint256 offerPrice_ = amount_ * offer.priceForToken;
+        uint256 offerPrice_ = amount_ * listing.priceForToken;
         require(msg.value >= offerPrice_, "NFTSale: insufficient MATIC amount");
 
-        uint256 currentAmount_ = offer.currentAmount;
+        uint256 currentAmount_ = listing.currentAmount;
         require(currentAmount_ >= amount_, "NFTSale: insufficient token amount");
 
         (address receiver_, uint256 fee_) = editionContract.royaltyInfo(
-            offer.tokenId,
+            listing.tokenId,
             offerPrice_
         );
 
         currentAmount_ -= amount_;
 
-        offer.currentAmount = currentAmount_;
+        listing.currentAmount = currentAmount_;
 
         if (currentAmount_ == 0) {
-            offer.isClosed = true;
+            listing.isClosed = true;
         }
 
         _sendNative(receiver_, fee_);
-        _sendNative(offer.seller, offerPrice_ - fee_);
+        _sendNative(listing.seller, offerPrice_ - fee_);
 
-        editionContract.safeTransferFrom(offer.seller, _msgSender(), offer.tokenId, amount_, "");
+        editionContract.safeTransferFrom(
+            listing.seller,
+            _msgSender(),
+            listing.tokenId,
+            amount_,
+            ""
+        );
 
         /// @dev push back eth
 
@@ -113,9 +119,9 @@ contract NFTSale is UUPSOwnable, INFTSale {
             "NFTSale: insufficient amount"
         );
 
-        Offer[] storage tokenOffers = offers[id_];
-        tokenOffers.push(
-            Offer({
+        Listing[] storage tokenListings = listings[id_];
+        tokenListings.push(
+            Listing({
                 seller: seller_,
                 isClosed: false,
                 tokenId: id_,
@@ -124,9 +130,9 @@ contract NFTSale is UUPSOwnable, INFTSale {
             })
         );
 
-        emit SaleCreated(id_, tokenOffers.length - 1, seller_);
+        emit SaleCreated(id_, tokenListings.length - 1, seller_);
 
-        return tokenOffers.length - 1;
+        return tokenListings.length - 1;
     }
 
     function _sendNative(address to_, uint256 amount_) internal {

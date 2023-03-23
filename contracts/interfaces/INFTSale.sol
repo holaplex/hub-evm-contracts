@@ -3,14 +3,14 @@ pragma solidity ^0.8.9;
 
 interface INFTSale {
     /**
-     * @notice The struct holds information about sale offer
+     * @notice The struct holds information about the listing
      * @param seller the address of seller
      * @param isCloset the bool flag, if true - sale is closed
      * @param tokenId the id of edition
      * @param currentAmount the current amount to sale
      * @param priceForToken the price in wei of one token
      */
-    struct Offer {
+    struct Listing {
         address seller;
         bool isClosed;
         uint256 tokenId;
