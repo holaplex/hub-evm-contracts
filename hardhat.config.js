@@ -7,6 +7,7 @@ require("@dlsl/hardhat-markup");
 require("hardhat-contract-sizer");
 require("hardhat-gas-reporter");
 require("solidity-coverage");
+require("hardhat-abi-exporter");
 
 const dotenv = require("dotenv");
 dotenv.config();
