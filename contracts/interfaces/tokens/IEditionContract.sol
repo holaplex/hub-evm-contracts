@@ -52,13 +52,6 @@ interface IEditionContract is IERC2981Upgradeable, IERC1155Permit, IUUPSOwnable 
     function supportsInterface(bytes4 interfaceId_) external view returns (bool);
 
     /**
-     * @notice The function for getting owner of edition
-     * @param id_ the id of edition
-     * @return owner of edition
-     */
-    function ownerOf(uint256 id_) external view returns (address);
-
-    /**
      * @notice The function for creating new edition
      * @param id_ the id of edition
      * @param editionInfo_ the struct with info-only parameters
