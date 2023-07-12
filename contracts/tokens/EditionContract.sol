@@ -40,10 +40,6 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         return editions[id_].info.uri;
     }
 
-    function ownerOf(uint256 id_) external view returns (address) {
-        return editions[id_].owner;
-    }
-
     function createEdition(
         uint256 id_,
         EditionInfo memory editionInfo_,
@@ -99,10 +95,29 @@ contract EditionContract is ERC2981Upgradeable, ERC1155Permit, UUPSOwnable, IEdi
         _mint(to_, id_, amount_, "");
     }
 
+    function setContractURI(string memory uri_) public onlyOwner {
+        _contractURI = uri_;
+    }
+
+    function contractURI() public view returns (string memory) {
+        return _contractURI;
+    }
+
+    function setName(string memory name_) public onlyOwner {
+        name = name_;
+    }
+
+    function setSymbol(string memory symbol_) public onlyOwner {
+        symbol = symbol_;
+    }
+
     /**
      * This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.
      * See https://docs.openzeppelin.com/contracts/4.x/upgradeable#storage_gaps
      */
     uint256[45] private __gap;
+    string private _contractURI;
+    string public name;
+    string public symbol;
 }
